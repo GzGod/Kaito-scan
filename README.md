@@ -52,3 +52,8 @@ API_KEY=optional-admin-key
 ## Notes
 
 Snapshots are stored in `data/snapshots.json`. On Railway, attach a persistent volume if you want snapshots to survive container rebuilds. The service also refreshes on boot if no snapshot exists.
+
+## Usage Docs
+
+See [docs/USAGE.md](docs/USAGE.md).
+
