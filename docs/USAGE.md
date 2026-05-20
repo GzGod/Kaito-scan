@@ -71,7 +71,7 @@ GET /api/status
 示例：
 
 ```bash
-curl https://YOUR_DOMAIN/api/status
+curl https://kaito-scan-production.up.railway.app/api/status
 ```
 
 ### 全部快照
@@ -83,7 +83,7 @@ GET /api/live
 返回当前内存中的全部快照。
 
 ```bash
-curl https://YOUR_DOMAIN/api/live
+curl https://kaito-scan-production.up.railway.app/api/live
 ```
 
 ### pre-tge 24h heatmap
@@ -93,7 +93,7 @@ GET /api/pre-tge?limit=50
 ```
 
 ```bash
-curl "https://YOUR_DOMAIN/api/pre-tge?limit=50"
+curl "https://kaito-scan-production.up.railway.app/api/pre-tge?limit=50"
 ```
 
 ### pre-tge 24h topDelta
@@ -103,7 +103,7 @@ GET /api/pre-tge/top-delta?limit=50
 ```
 
 ```bash
-curl "https://YOUR_DOMAIN/api/pre-tge/top-delta?limit=50"
+curl "https://kaito-scan-production.up.railway.app/api/pre-tge/top-delta?limit=50"
 ```
 
 ### infomarkets 24h heatmap
@@ -113,7 +113,7 @@ GET /api/infomarkets?limit=50
 ```
 
 ```bash
-curl "https://YOUR_DOMAIN/api/infomarkets?limit=50"
+curl "https://kaito-scan-production.up.railway.app/api/infomarkets?limit=50"
 ```
 
 ### infomarkets KOL 7d
@@ -123,7 +123,7 @@ GET /api/infomarkets/kols?limit=50
 ```
 
 ```bash
-curl "https://YOUR_DOMAIN/api/infomarkets/kols?limit=50"
+curl "https://kaito-scan-production.up.railway.app/api/infomarkets/kols?limit=50"
 ```
 
 ### exchange 24h heatmap
@@ -133,7 +133,7 @@ GET /api/exchange?limit=50
 ```
 
 ```bash
-curl "https://YOUR_DOMAIN/api/exchange?limit=50"
+curl "https://kaito-scan-production.up.railway.app/api/exchange?limit=50"
 ```
 
 ### 按 key 读取任意快照
@@ -145,8 +145,8 @@ GET /api/snapshot/:key?limit=50
 注意 key 里有冒号，URL 中可以直接使用，也可以 URL encode。
 
 ```bash
-curl "https://YOUR_DOMAIN/api/snapshot/pre-tge:24h:heatmap?limit=50"
-curl "https://YOUR_DOMAIN/api/snapshot/infomarkets:7d:kols?limit=100"
+curl "https://kaito-scan-production.up.railway.app/api/snapshot/pre-tge:24h:heatmap?limit=50"
+curl "https://kaito-scan-production.up.railway.app/api/snapshot/infomarkets:7d:kols?limit=100"
 ```
 
 ## 手动触发更新
@@ -164,7 +164,7 @@ x-api-key: YOUR_API_KEY
 示例：
 
 ```bash
-curl -X POST https://YOUR_DOMAIN/api/admin/update \
+curl -X POST https://kaito-scan-production.up.railway.app/api/admin/update \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
@@ -223,3 +223,4 @@ http://localhost:3000/api/status
 - 用户调用 API 不会触发 Kaito 请求。
 - 服务每小时第 05 分钟更新一次。
 - Railway 默认文件系统不保证长期持久化。如果要长期保存历史快照，后续建议接 Postgres 或对象存储。
+

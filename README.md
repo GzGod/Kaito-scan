@@ -57,3 +57,10 @@ Snapshots are stored in `data/snapshots.json`. On Railway, attach a persistent v
 
 See [docs/USAGE.md](docs/USAGE.md).
 
+
+## Live Deployment
+
+Dashboard: https://kaito-scan-production.up.railway.app
+
+Status API: https://kaito-scan-production.up.railway.app/api/status
+
