@@ -1,189 +1,168 @@
-# Kaito Scan ʹ���ĵ�
+# Kaito Scan Usage Guide
 
-Kaito Scan ��һ�����������ݷ������������û����� API ʱʵʱ���� Kaito�������ɷ����Լ����ƻ�ץȡ���ݲ�������գ�API ֻ�������һ�ο��ա�
+Kaito Scan is a cached data API service.
 
-## ���²���
+It does not request Kaito when users call your API. The service fetches Kaito data on a schedule, stores the latest snapshots, and API users only read those cached snapshots.
 
-������������ȳ���ץȡһ�����ݡ�����������п��գ���ֱ�Ӷ�ȡ���п��ա�
+## Live URL
 
-֮��ᰴ��ʵʱ��ÿСʱ�� 05 �����Զ�����һ�Σ����磺
+Dashboard:
 
-```text
+https://kaito-scan-production.up.railway.app
+
+Status API:
+
+https://kaito-scan-production.up.railway.app/api/status
+
+## Auth
+
+All API routes under /api/* require this header:
+
+Authorization: Bearer YOUR_API_KEY
+
+Current API key:
+
+ks_2Q3fr6OgRDMLHLVKXg8LnBDhgZSWcuM4y5Oe47d9usY
+
+Example:
+
+curl https://kaito-scan-production.up.railway.app/api/status \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+The dashboard page / is public. API routes are protected.
+
+## Update Schedule
+
+The service updates every hour at minute 05.
+
+Examples:
+
 00:05
 01:05
 02:05
 08:05
 09:05
 10:05
-```
 
-������Ĭ���� 5������ͨ�������������ã�
+The service also tries to fetch data once on boot if no snapshot exists.
 
-```text
+Default scrape concurrency is 5.
+
+Set with:
+
 SCRAPE_CONCURRENCY=5
-```
 
-## ��ǰ�ɼ�������
+## Current Datasets
 
-��ǰ����ɼ����� 5 �����ݣ�
+The service currently collects these snapshots:
 
-```text
 pre-tge:24h:heatmap
 pre-tge:24h:topDelta
 infomarkets:24h:heatmap
 exchange:24h:heatmap
 infomarkets:7d:kols
-```
 
-��δ��ͨ��
+Not available yet:
 
-```text
 ct-leaderboard
 vcarena
-```
 
-## ҳ��
+## API Endpoints
 
-��ҳ��һ�� HTML ���壺
+### Status
 
-```text
-GET /
-```
-
-չʾ��
-
-- pre-tge 24h Top 50
-- pre-tge 24h Movers
-- infomarkets 24h Top 50
-- exchange 24h Top 50
-- infomarkets KOL 7d Top 50
-
-## API
-
-### ״̬
-
-```text
 GET /api/status
-```
 
-���ط���״̬��������ʱ�䡢��һ�θ���ʱ�䡢���� snapshot key��
+Returns update status, next scheduled update time, last run info, errors, and available snapshot keys.
 
-ʾ����
+Example:
 
-```bash
 curl https://kaito-scan-production.up.railway.app/api/status \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
-### ȫ������
+### All Live Data
 
-```text
 GET /api/live
-```
 
-���ص�ǰ�ڴ��е�ȫ�����ա�
+Returns all current snapshots.
 
-```bash
+Example:
+
 curl https://kaito-scan-production.up.railway.app/api/live \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
 ### pre-tge 24h heatmap
 
-```text
 GET /api/pre-tge?limit=50
-```
 
-```bash
+Example:
+
 curl "https://kaito-scan-production.up.railway.app/api/pre-tge?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
 ### pre-tge 24h topDelta
 
-```text
 GET /api/pre-tge/top-delta?limit=50
-```
 
-```bash
+Example:
+
 curl "https://kaito-scan-production.up.railway.app/api/pre-tge/top-delta?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
 ### infomarkets 24h heatmap
 
-```text
 GET /api/infomarkets?limit=50
-```
 
-```bash
+Example:
+
 curl "https://kaito-scan-production.up.railway.app/api/infomarkets?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
 ### infomarkets KOL 7d
 
-```text
 GET /api/infomarkets/kols?limit=50
-```
 
-```bash
+Example:
+
 curl "https://kaito-scan-production.up.railway.app/api/infomarkets/kols?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
 ### exchange 24h heatmap
 
-```text
 GET /api/exchange?limit=50
-```
 
-```bash
+Example:
+
 curl "https://kaito-scan-production.up.railway.app/api/exchange?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
-### �� key ��ȡ�������
+### Read Any Snapshot By Key
 
-```text
 GET /api/snapshot/:key?limit=50
-```
 
-ע�� key ����ð�ţ�URL �п���ֱ��ʹ�ã�Ҳ���� URL encode��
+Examples:
 
-```bash
 curl "https://kaito-scan-production.up.railway.app/api/snapshot/pre-tge:24h:heatmap?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
+
 curl "https://kaito-scan-production.up.railway.app/api/snapshot/infomarkets:7d:kols?limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
-## �ֶ���������
+## Manual Update
 
-```text
 POST /api/admin/update
-```
 
-��������˻������� `API_KEY`����Ҫ�� header��
+This manually triggers a new scrape.
 
-```text
-Authorization: Bearer YOUR_API_KEY
-```
+Example:
 
-ʾ����
-
-```bash
 curl -X POST https://kaito-scan-production.up.railway.app/api/admin/update \
   -H "Authorization: Bearer YOUR_API_KEY"
-```
 
-���û������ `API_KEY`������ӿڲ���Ҫ��Ȩ����ʽ�������������� `API_KEY`��
+## Response Shape
 
-## ���ؽṹ
+A single snapshot response looks like this:
 
-�������շ��ؽṹ�������£�
-
-```json
 {
   "key": "pre-tge:24h:heatmap",
   "source": "pre-tge",
@@ -193,43 +172,39 @@ curl -X POST https://kaito-scan-production.up.railway.app/api/admin/update \
   "count": 50,
   "data": []
 }
-```
 
-���ʹ�� `limit`��`data` ��ֻ����ǰ N ����
+If you pass limit, the data array returns only the first N items.
 
-## Railway ��������
+## Railway Environment Variables
 
-�������ã�
+Recommended variables:
 
-```text
 SCRAPE_CONCURRENCY=5
-API_KEY=�Լ�����һ����һ�������ַ���
-```
+API_KEY=YOUR_API_KEY
 
-Railway ���Զ��ṩ��
+Railway provides PORT automatically.
 
-```text
-PORT
-```
+## Local Run
 
-## ��������
+Install dependencies:
 
-```bash
 npm install
+
+Start server:
+
 npm start
-```
 
-Ȼ����ʣ�
+Open:
 
-```text
 http://localhost:3000
 http://localhost:3000/api/status
-```
 
-## ע������
+For local API calls, include your API key if API_KEY is set.
 
-- API ���ص��Ǳ����񱣴�Ŀ��գ���������ʱʵʱץȡ Kaito��
-- �û����� API ���ᴥ�� Kaito ����
-- ����ÿСʱ�� 05 ���Ӹ���һ�Ρ�
-- Railway Ĭ���ļ�ϵͳ����֤���ڳ־û������Ҫ���ڱ�����ʷ���գ���������� Postgres �����洢��
+## Notes
 
+- API users read your cached snapshots.
+- API calls do not trigger Kaito requests.
+- The service updates every hour at minute 05.
+- Railway filesystem is not guaranteed to be permanent across rebuilds.
+- For long-term history, add Postgres or object storage later.
