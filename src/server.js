@@ -26,7 +26,9 @@ function sendHtml(res, html) {
 
 function isAuthorized(req) {
   if (!API_KEY) return true;
-  return req.headers['x-api-key'] === API_KEY;
+  const authorization = req.headers.authorization || '';
+  const bearer = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
+  return bearer === API_KEY;
 }
 
 function filterSnapshot(snapshot, limit) {
@@ -41,6 +43,10 @@ async function handle(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (url.pathname === '/') return sendHtml(res, renderDashboard(getStore()));
+
+  if (url.pathname.startsWith('/api/') && !isAuthorized(req)) {
+    return sendJson(res, 401, { error: 'unauthorized' });
+  }
 
   if (url.pathname === '/api/status') {
     const store = getStore();
@@ -78,7 +84,6 @@ async function handle(req, res) {
   }
 
   if (url.pathname === '/api/admin/update' && req.method === 'POST') {
-    if (!isAuthorized(req)) return sendJson(res, 401, { error: 'unauthorized' });
     const result = await runUpdate('manual-api');
     return sendJson(res, result.ok ? 200 : 500, result);
   }
