@@ -1,0 +1,9 @@
+node_modules/
+.tmp-playwright/
+browser-snapshot-indexeddb/
+browser-snapshot-localstorage/
+data/
+.env
+.DS_Store
+*.log
+output/
