@@ -92,6 +92,7 @@ async function handle(req, res) {
 }
 
 async function main() {
+  console.log(`API auth enabled: ${Boolean(API_KEY)}`);
   await loadStore();
   if (!getStore().updatedAt) runUpdate('boot').catch((error) => console.error(error));
   scheduleHourlyAtFive();
