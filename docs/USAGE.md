@@ -1,210 +1,242 @@
-# Kaito Scan Usage Guide
+# Kaito Scan Usage
 
-Kaito Scan is a cached data API service.
+Kaito Scan keeps cached Kaito mindshare snapshots and serves them through your own API.
 
-It does not request Kaito when users call your API. The service fetches Kaito data on a schedule, stores the latest snapshots, and API users only read those cached snapshots.
+## Base URL
 
-## Live URL
-
-Dashboard:
+Production:
 
 https://kaito-scan-production.up.railway.app
 
-Status API:
+## Authentication
 
-https://kaito-scan-production.up.railway.app/api/status
+All `/api/*` routes require an Authorization header:
 
-## Auth
-
-All API routes under /api/* require this header:
-
+```text
 Authorization: Bearer YOUR_API_KEY
+```
 
-Current API key:
-
-ks_2Q3fr6OgRDMLHLVKXg8LnBDhgZSWcuM4y5Oe47d9usY
-
-Example:
-
-curl https://kaito-scan-production.up.railway.app/api/status \
-  -H "Authorization: Bearer YOUR_API_KEY"
-
-The dashboard page / is public. API routes are protected.
+The dashboard `/` is public.
 
 ## Update Schedule
 
-The service updates every hour at minute 05.
+- The worker updates every hour at minute `05`.
+- Examples: `08:05`, `09:05`, `10:05`.
+- API requests read cached snapshots only.
+- API requests do not trigger Kaito requests.
+- Default scrape concurrency is `5`.
 
-Examples:
+## Supported Durations
 
-00:05
-01:05
-02:05
-08:05
-09:05
-10:05
+The service collects each dataset for these durations:
 
-The service also tries to fetch data once on boot if no snapshot exists.
-
-Default scrape concurrency is 5.
-
-Set with:
-
-SCRAPE_CONCURRENCY=5
+```text
+24h, 7d, 30d, 3m, 6m, 12m
+```
 
 ## Current Datasets
 
-The service currently collects these snapshots:
+For every supported duration, the service collects ticker snapshots:
 
-pre-tge:24h:heatmap
-pre-tge:24h:topDelta
-infomarkets:24h:heatmap
-exchange:24h:heatmap
-infomarkets:7d:kols
+```text
+pre-tge:<duration>:heatmap
+pre-tge:<duration>:topDelta
+infomarkets:<duration>:heatmap
+exchange:<duration>:heatmap
+
+Info KOL snapshots are collected for 7d, 30d, 3m, 6m, and 12m only:
+
+infomarkets:<duration>:kols
+```
+
+That is `29` snapshots per update.
 
 Not available yet:
 
+```text
 ct-leaderboard
 vcarena
+```
 
 ## API Endpoints
 
 ### Status
 
+```text
 GET /api/status
+```
 
 Returns update status, next scheduled update time, last run info, errors, and available snapshot keys.
 
-Example:
-
+```bash
 curl https://kaito-scan-production.up.railway.app/api/status \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
 ### All Live Data
 
+```text
 GET /api/live
+```
 
 Returns all current snapshots.
 
-Example:
-
+```bash
 curl https://kaito-scan-production.up.railway.app/api/live \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
-### pre-tge 24h heatmap
+### pre-tge Heatmap
 
-GET /api/pre-tge?limit=50
+```text
+GET /api/pre-tge?duration=24h&limit=50
+```
 
-Example:
+`duration` can be `24h`, `7d`, `30d`, `3m`, `6m`, or `12m`. Default is `24h`.
 
-curl "https://kaito-scan-production.up.railway.app/api/pre-tge?limit=50" \
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/pre-tge?duration=7d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
-### pre-tge 24h topDelta
+### pre-tge Top Delta
 
-GET /api/pre-tge/top-delta?limit=50
+```text
+GET /api/pre-tge/top-delta?duration=24h&limit=50
+```
 
-Example:
+Default duration is `24h`.
 
-curl "https://kaito-scan-production.up.railway.app/api/pre-tge/top-delta?limit=50" \
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/pre-tge/top-delta?duration=30d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
-### infomarkets 24h heatmap
+### infomarkets Heatmap
 
-GET /api/infomarkets?limit=50
+```text
+GET /api/infomarkets?duration=24h&limit=50
+```
 
-Example:
+Default duration is `24h`.
 
-curl "https://kaito-scan-production.up.railway.app/api/infomarkets?limit=50" \
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/infomarkets?duration=3m&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
-### infomarkets KOL 7d
+### infomarkets KOL Leaderboard
 
-GET /api/infomarkets/kols?limit=50
+```text
+GET /api/infomarkets/kols?duration=7d&limit=50
+```
 
-Example:
+Default duration is `7d`. KOL supports `7d`, `30d`, `3m`, `6m`, and `12m`; Kaito currently rejects `24h` for this endpoint.
 
-curl "https://kaito-scan-production.up.railway.app/api/infomarkets/kols?limit=50" \
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/infomarkets/kols?duration=12m&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
-### exchange 24h heatmap
+### exchange Heatmap
 
-GET /api/exchange?limit=50
+```text
+GET /api/exchange?duration=24h&limit=50
+```
 
-Example:
+Default duration is `24h`.
 
-curl "https://kaito-scan-production.up.railway.app/api/exchange?limit=50" \
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/exchange?duration=30d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
 ### Read Any Snapshot By Key
 
+```text
 GET /api/snapshot/:key?limit=50
+```
 
 Examples:
 
+```bash
 curl "https://kaito-scan-production.up.railway.app/api/snapshot/pre-tge:24h:heatmap?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 
-curl "https://kaito-scan-production.up.railway.app/api/snapshot/infomarkets:7d:kols?limit=100" \
+curl "https://kaito-scan-production.up.railway.app/api/snapshot/infomarkets:12m:kols?limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
-## Manual Update
+### Manual Update
 
+```text
 POST /api/admin/update
+```
 
 This manually triggers a new scrape.
 
-Example:
-
+```bash
 curl -X POST https://kaito-scan-production.up.railway.app/api/admin/update \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
 
 ## Response Shape
 
 A single snapshot response looks like this:
 
+```json
 {
-  "key": "pre-tge:24h:heatmap",
+  "key": "pre-tge:7d:heatmap",
   "source": "pre-tge",
   "dataset": "heatmap",
-  "duration": "24h",
+  "duration": "7d",
   "updatedAt": "2026-05-20T00:05:12.000Z",
   "count": 50,
   "data": []
 }
+```
 
-If you pass limit, the data array returns only the first N items.
+If you pass `limit`, the `data` array returns only the first N items.
 
 ## Railway Environment Variables
 
 Recommended variables:
 
+```text
 SCRAPE_CONCURRENCY=5
 API_KEY=YOUR_API_KEY
+```
 
-Railway provides PORT automatically.
+Railway provides `PORT` automatically.
 
 ## Local Run
 
 Install dependencies:
 
+```bash
 npm install
+```
 
 Start server:
 
+```bash
 npm start
+```
 
 Open:
 
+```text
 http://localhost:3000
 http://localhost:3000/api/status
+```
 
-For local API calls, include your API key if API_KEY is set.
+For local API calls, include your API key if `API_KEY` is set.
 
 ## Notes
 
 - API users read your cached snapshots.
 - API calls do not trigger Kaito requests.
-- The service updates every hour at minute 05.
+- The service updates every hour at minute `05`.
 - Railway filesystem is not guaranteed to be permanent across rebuilds.
 - For long-term history, add Postgres or object storage later.
+

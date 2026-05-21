@@ -8,6 +8,8 @@ const RESPONSE_IV_HEX = '22d28b1b5b4e0a4d';
 const REQUEST_DELAY_MS = 500;
 const RATE_LIMIT_DELAY_MS = 20000;
 const CONCURRENCY = Number(process.env.SCRAPE_CONCURRENCY || 5);
+const DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
+const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
 
 const DEFAULT_HEADERS = {
   accept: 'application/json, text/plain, */*',
@@ -18,90 +20,107 @@ const DEFAULT_HEADERS = {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
 };
 
-const JOBS = [
-  {
-    key: 'pre-tge:24h:heatmap',
-    source: 'pre-tge',
-    dataset: 'heatmap',
-    duration: '24h',
+function tickerMindshareJob({ source, dataset, duration, params }) {
+  return {
+    key: `${source}:${duration}:${dataset}`,
+    source,
+    dataset,
+    duration,
     route: 'tickers/mindshare',
-    params: {
-      api_version: 'v2',
-      nft: 'false',
-      ex_official: 'false',
-      weighted: 'false',
-      sort_type: 'desc',
-      type: 'heatmap',
-      duration: '24h',
-      pre_tge: 'true',
-    },
-  },
-  {
-    key: 'pre-tge:24h:topDelta',
-    source: 'pre-tge',
-    dataset: 'topDelta',
-    duration: '24h',
-    route: 'tickers/mindshare',
-    params: {
-      api_version: 'v2',
-      nft: 'false',
-      ex_official: 'false',
-      weighted: 'false',
-      sort_type: 'asc',
-      type: 'topDelta',
-      duration: '24h',
-      pre_tge: 'true',
-    },
-  },
-  {
-    key: 'infomarkets:24h:heatmap',
-    source: 'infomarkets',
-    dataset: 'heatmap',
-    duration: '24h',
-    route: 'tickers/mindshare',
-    params: {
-      api_version: 'v2',
-      nft: 'false',
-      ex_official: 'false',
-      weighted: 'false',
-      sort_type: 'desc',
-      type: 'heatmap',
-      duration: '24h',
-      topic_id: 'INFOMKT',
-    },
-  },
-  {
-    key: 'exchange:24h:heatmap',
-    source: 'exchange',
-    dataset: 'heatmap',
-    duration: '24h',
-    route: 'tickers/mindshare',
-    params: {
-      api_version: 'v2',
-      nft: 'false',
-      ex_official: 'false',
-      weighted: 'true',
-      categories: 'EXCHANGE',
-      sort_type: 'desc',
-      type: 'heatmap',
-      duration: '24h',
-    },
-  },
-  {
-    key: 'infomarkets:7d:kols',
-    source: 'infomarkets',
+    params: { ...params, duration },
+  };
+}
+
+function kolMindshareJob({ source, duration, params }) {
+  return {
+    key: `${source}:${duration}:kols`,
+    source,
     dataset: 'kols',
-    duration: '7d',
+    duration,
     route: 'kol/mindshare/top-leaderboard',
+    params: { ...params, duration },
+  };
+}
+
+function tickerJobs() {
+  return DURATIONS.flatMap((duration) => [
+    tickerMindshareJob({
+      source: 'pre-tge',
+      dataset: 'heatmap',
+      duration,
+      params: {
+        api_version: 'v2',
+        nft: 'false',
+        ex_official: 'false',
+        weighted: 'false',
+        sort_type: 'desc',
+        type: 'heatmap',
+        pre_tge: 'true',
+      },
+    }),
+    tickerMindshareJob({
+      source: 'pre-tge',
+      dataset: 'topDelta',
+      duration,
+      params: {
+        api_version: 'v2',
+        nft: 'false',
+        ex_official: 'false',
+        weighted: 'false',
+        sort_type: 'asc',
+        type: 'topDelta',
+        pre_tge: 'true',
+      },
+    }),
+    tickerMindshareJob({
+      source: 'infomarkets',
+      dataset: 'heatmap',
+      duration,
+      params: {
+        api_version: 'v2',
+        nft: 'false',
+        ex_official: 'false',
+        weighted: 'false',
+        sort_type: 'desc',
+        type: 'heatmap',
+        topic_id: 'INFOMKT',
+      },
+    }),
+    tickerMindshareJob({
+      source: 'exchange',
+      dataset: 'heatmap',
+      duration,
+      params: {
+        api_version: 'v2',
+        nft: 'false',
+        ex_official: 'false',
+        weighted: 'true',
+        categories: 'EXCHANGE',
+        sort_type: 'desc',
+        type: 'heatmap',
+      },
+    }),
+  ]);
+}
+
+function kolJobs() {
+  return KOL_DURATIONS.map((duration) => kolMindshareJob({
+    source: 'infomarkets',
+    duration,
     params: {
-      duration: '7d',
       top_n: 100,
       topic_id: 'INFOMKT',
       community_tier: 'tier1',
       language_filter: 'all',
     },
-  },
-];
+  }));
+}
+
+function buildJobs() {
+  return [...tickerJobs(), ...kolJobs()];
+}
+
+const JOBS = buildJobs();
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -245,7 +264,11 @@ async function scrapeLive() {
 }
 
 module.exports = {
+  DURATIONS,
+  KOL_DURATIONS,
   JOBS,
+  buildJobs,
   normalizeItems,
   scrapeLive,
 };
+

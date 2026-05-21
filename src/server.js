@@ -5,6 +5,16 @@ const { getSnapshot, getStore, listSnapshots, loadStore } = require('./store');
 
 const PORT = Number(process.env.PORT || 3000);
 const API_KEY = process.env.API_KEY || '';
+const SUPPORTED_DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
+const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
+
+const DATASET_ROUTES = {
+  '/api/pre-tge': { source: 'pre-tge', dataset: 'heatmap', defaultDuration: '24h' },
+  '/api/pre-tge/top-delta': { source: 'pre-tge', dataset: 'topDelta', defaultDuration: '24h' },
+  '/api/infomarkets': { source: 'infomarkets', dataset: 'heatmap', defaultDuration: '24h' },
+  '/api/infomarkets/kols': { source: 'infomarkets', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS },
+  '/api/exchange': { source: 'exchange', dataset: 'heatmap', defaultDuration: '24h' },
+};
 
 function sendJson(res, status, data) {
   const body = JSON.stringify(data, null, 2);
@@ -39,6 +49,11 @@ function filterSnapshot(snapshot, limit) {
   return { ...snapshot, count: Math.min(items.length, limit), data: items.slice(0, limit) };
 }
 
+function getRequestedDuration(url, fallback, supportedDurations = SUPPORTED_DURATIONS) {
+  const duration = url.searchParams.get('duration') || fallback;
+  return supportedDurations.includes(duration) ? duration : null;
+}
+
 async function handle(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -71,16 +86,20 @@ async function handle(req, res) {
     return sendJson(res, 200, snapshot);
   }
 
-  const routeMap = {
-    '/api/pre-tge': 'pre-tge:24h:heatmap',
-    '/api/pre-tge/top-delta': 'pre-tge:24h:topDelta',
-    '/api/infomarkets': 'infomarkets:24h:heatmap',
-    '/api/infomarkets/kols': 'infomarkets:7d:kols',
-    '/api/exchange': 'exchange:24h:heatmap',
-  };
-  if (routeMap[url.pathname]) {
+  if (DATASET_ROUTES[url.pathname]) {
+    const route = DATASET_ROUTES[url.pathname];
+    const duration = getRequestedDuration(url, route.defaultDuration, route.durations);
+    if (!duration) {
+      return sendJson(res, 400, {
+        error: 'unsupported duration',
+        supportedDurations: route.durations || SUPPORTED_DURATIONS,
+      });
+    }
     const limit = Number(url.searchParams.get('limit') || 0);
-    return sendJson(res, 200, filterSnapshot(getSnapshot(routeMap[url.pathname]), limit));
+    const key = `${route.source}:${duration}:${route.dataset}`;
+    const snapshot = filterSnapshot(getSnapshot(key), limit);
+    if (!snapshot) return sendJson(res, 404, { error: 'snapshot not found', key });
+    return sendJson(res, 200, snapshot);
   }
 
   if (url.pathname === '/api/admin/update' && req.method === 'POST') {
@@ -108,3 +127,4 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
