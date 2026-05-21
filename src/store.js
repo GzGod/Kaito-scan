@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
+const { getLatestRun, hasDatabase, initDatabase, saveHistory } = require('./db');
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SNAPSHOT_FILE = path.join(DATA_DIR, 'snapshots.json');
@@ -16,6 +17,7 @@ async function ensureDataDir() {
 }
 
 async function loadStore() {
+  await initDatabase();
   try {
     const raw = await fs.readFile(SNAPSHOT_FILE, 'utf8');
     memory = JSON.parse(raw);
@@ -37,9 +39,12 @@ async function saveScrapeResult(result) {
       completedAt: result.completedAt,
       concurrency: result.concurrency,
       count: result.snapshots.length,
+      history: null,
     },
     lastError: null,
   };
+  const history = await saveHistory(result);
+  memory.lastRun.history = history;
   await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(memory, null, 2));
   return memory;
 }
@@ -54,7 +59,14 @@ async function setError(error) {
 }
 
 function getStore() {
-  return memory;
+  return { ...memory, database: { enabled: hasDatabase() } };
+}
+
+async function getDatabaseStatus() {
+  return {
+    enabled: hasDatabase(),
+    latestRun: hasDatabase() ? await getLatestRun() : null,
+  };
 }
 
 function getSnapshot(key) {
@@ -66,6 +78,7 @@ function listSnapshots() {
 }
 
 module.exports = {
+  getDatabaseStatus,
   getSnapshot,
   getStore,
   listSnapshots,
@@ -73,3 +86,4 @@ module.exports = {
   saveScrapeResult,
   setError,
 };
+

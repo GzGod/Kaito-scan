@@ -1,7 +1,8 @@
 const http = require('http');
 const { renderDashboard } = require('./dashboard');
 const { getNextFiveMinute, runUpdate, scheduleHourlyAtFive } = require('./worker');
-const { getSnapshot, getStore, listSnapshots, loadStore } = require('./store');
+const { getDatabaseStatus, getSnapshot, getStore, listSnapshots, loadStore } = require('./store');
+const { getHistoricalSnapshot, getRunSnapshots, listRuns, listSnapshotHistory } = require('./db');
 
 const PORT = Number(process.env.PORT || 3000);
 const API_KEY = process.env.API_KEY || '';
@@ -65,11 +66,13 @@ async function handle(req, res) {
 
   if (url.pathname === '/api/status') {
     const store = getStore();
+    const database = await getDatabaseStatus();
     return sendJson(res, 200, {
       updatedAt: store.updatedAt,
       nextUpdateAt: getNextFiveMinute().toISOString(),
       lastRun: store.lastRun,
       lastError: store.lastError,
+      database,
       keys: Object.keys(store.snapshots || {}),
     });
   }
@@ -78,6 +81,32 @@ async function handle(req, res) {
 
   if (url.pathname === '/api/snapshots') return sendJson(res, 200, { snapshots: listSnapshots() });
 
+
+  if (url.pathname === '/api/history/runs') {
+    const limit = Number(url.searchParams.get('limit') || 24);
+    return sendJson(res, 200, { runs: await listRuns(limit) });
+  }
+
+  if (url.pathname.startsWith('/api/history/run/')) {
+    const runId = Number(decodeURIComponent(url.pathname.replace('/api/history/run/', '')));
+    if (!Number.isFinite(runId)) return sendJson(res, 400, { error: 'invalid run id' });
+    return sendJson(res, 200, { runId, snapshots: await getRunSnapshots(runId) });
+  }
+
+  if (url.pathname.startsWith('/api/history/snapshot/')) {
+    const key = decodeURIComponent(url.pathname.replace('/api/history/snapshot/', ''));
+    const limit = Number(url.searchParams.get('limit') || 24);
+    return sendJson(res, 200, { key, history: await listSnapshotHistory(key, limit) });
+  }
+
+  if (url.pathname.startsWith('/api/history/item/')) {
+    const id = Number(decodeURIComponent(url.pathname.replace('/api/history/item/', '')));
+    if (!Number.isFinite(id)) return sendJson(res, 400, { error: 'invalid snapshot history id' });
+    const limit = Number(url.searchParams.get('limit') || 0);
+    const snapshot = await getHistoricalSnapshot(id, limit);
+    if (!snapshot) return sendJson(res, 404, { error: 'historical snapshot not found', id });
+    return sendJson(res, 200, snapshot);
+  }
   if (url.pathname.startsWith('/api/snapshot/')) {
     const key = decodeURIComponent(url.pathname.replace('/api/snapshot/', ''));
     const limit = Number(url.searchParams.get('limit') || 0);
@@ -127,4 +156,5 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
 
