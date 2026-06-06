@@ -18,6 +18,7 @@ async function runUpdate(reason = 'manual') {
     const result = await scrapeLive();
     await saveScrapeResult(result);
     console.log(`[worker] scrape completed at ${result.completedAt}`);
+    if (result.metrics) console.log(`[worker] scrape metrics ${JSON.stringify(result.metrics)}`);
     return { ok: true, completedAt: result.completedAt };
   } catch (error) {
     console.error('[worker] scrape failed:', error);

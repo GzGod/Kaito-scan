@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 .tmp-playwright/
 browser-snapshot-indexeddb/
 browser-snapshot-localstorage/
@@ -7,3 +7,11 @@ data/
 .DS_Store
 *.log
 output/
+.generated-api-key.txt
+.chrome-kaito-debug/
+.tmp-*/
+.tmp-*.js
+.tmp-*.json
+.tmp-*.html
+.tmp-*.txt
+

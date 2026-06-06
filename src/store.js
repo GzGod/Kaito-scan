@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { getLatestRun, hasDatabase, initDatabase, saveHistory } = require('./db');
+const { rebuildResponseCache } = require('./response-cache');
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SNAPSHOT_FILE = path.join(DATA_DIR, 'snapshots.json');
@@ -24,6 +25,7 @@ async function loadStore() {
   } catch (error) {
     if (error.code !== 'ENOENT') console.warn('Failed to load snapshot store:', error.message);
   }
+  rebuildResponseCache(memory);
   return memory;
 }
 
@@ -45,6 +47,7 @@ async function saveScrapeResult(result) {
   };
   const history = await saveHistory(result);
   memory.lastRun.history = history;
+  rebuildResponseCache(memory);
   await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(memory, null, 2));
   return memory;
 }

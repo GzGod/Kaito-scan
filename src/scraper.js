@@ -7,9 +7,60 @@ const RESPONSE_KEY_HEX = 'ab962e791e6675b2';
 const RESPONSE_IV_HEX = '22d28b1b5b4e0a4d';
 const REQUEST_DELAY_MS = 500;
 const RATE_LIMIT_DELAY_MS = 20000;
-const CONCURRENCY = Number(process.env.SCRAPE_CONCURRENCY || 5);
+const MAX_ATTEMPTS = 6;
+const CONCURRENCY = Number(process.env.SCRAPE_CONCURRENCY || 6);
+const RATE_LIMIT_RECOVERY_MS = Number(process.env.SCRAPE_RATE_LIMIT_RECOVERY_MS || 5000);
+const FETCH_TIMEOUT_MS = Number(process.env.SCRAPE_FETCH_TIMEOUT_MS || 30000);
 const DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
 const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
+
+const metrics = {
+  challengeRequests: 0,
+  challengeMs: 0,
+  challengeRetries: 0,
+  powMs: 0,
+  protectedRequests: 0,
+  protectedMs: 0,
+  rateLimits: 0,
+  transientErrors: 0,
+  globalRateLimitWaits: 0,
+};
+
+let rateLimitUntil = 0;
+let serialUntil = 0;
+let serialQueue = Promise.resolve();
+
+function resetMetrics() {
+  Object.keys(metrics).forEach((key) => {
+    metrics[key] = 0;
+  });
+}
+
+function getMetrics() {
+  return { ...metrics };
+}
+
+async function waitForGlobalRateLimit() {
+  const waitMs = rateLimitUntil - Date.now();
+  if (waitMs <= 0) return;
+  metrics.globalRateLimitWaits += 1;
+  await sleep(waitMs);
+}
+
+async function runWithTemporarySerialGate(fn) {
+  if (Date.now() >= serialUntil) return fn();
+  const previous = serialQueue;
+  let release;
+  serialQueue = new Promise((resolve) => {
+    release = resolve;
+  });
+  await previous;
+  try {
+    return await fn();
+  } finally {
+    release();
+  }
+}
 
 const DEFAULT_HEADERS = {
   accept: 'application/json, text/plain, */*',
@@ -126,6 +177,16 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function hashHex(input) {
   return crypto.createHash('sha256').update(input).digest('hex');
 }
@@ -179,15 +240,38 @@ async function readResponsePayload(response, label) {
 }
 
 async function getPowHeaders() {
-  const response = await fetch(`${BASE_URL}/analysis/session/validate`, { headers: DEFAULT_HEADERS });
-  if (!response.ok) throw new Error(`Challenge request failed: ${response.status} ${response.statusText}`);
-  const data = await readResponsePayload(response, 'challenge');
-  const { nonce, hash } = solvePow(data.challenge, Number(data.difficulty));
-  return {
-    'x-challenge': data.challenge,
-    'x-nonce': nonce,
-    'x-hash': hash,
-  };
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    await waitForGlobalRateLimit();
+    const challengeStartedAt = performance.now();
+    metrics.challengeRequests += 1;
+    const response = await fetchWithTimeout(`${BASE_URL}/analysis/session/validate`, { headers: DEFAULT_HEADERS });
+    metrics.challengeMs += performance.now() - challengeStartedAt;
+    if (response.ok) {
+      const data = await readResponsePayload(response, 'challenge');
+      const powStartedAt = performance.now();
+      const { nonce, hash } = solvePow(data.challenge, Number(data.difficulty));
+      metrics.powMs += performance.now() - powStartedAt;
+      return {
+        'x-challenge': data.challenge,
+        'x-nonce': nonce,
+        'x-hash': hash,
+      };
+    }
+
+    lastError = new Error(`Challenge request failed: ${response.status} ${response.statusText}`);
+    if ([429, 502, 503, 504].includes(response.status) && attempt < MAX_ATTEMPTS) {
+      metrics.challengeRetries += 1;
+      const delay = response.status === 429
+        ? RATE_LIMIT_DELAY_MS + Math.floor(Math.random() * 3000)
+        : REQUEST_DELAY_MS * attempt + Math.floor(Math.random() * 1000);
+      if (response.status === 429) rateLimitUntil = Math.max(rateLimitUntil, Date.now() + delay);
+      await sleep(delay);
+      continue;
+    }
+    throw lastError;
+  }
+  throw lastError;
 }
 
 async function fetchProtectedJson(route, params, label) {
@@ -197,17 +281,33 @@ async function fetchProtectedJson(route, params, label) {
   });
 
   let lastError;
-  for (let attempt = 1; attempt <= 6; attempt += 1) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     if (attempt > 1) await sleep(REQUEST_DELAY_MS);
+    await waitForGlobalRateLimit();
     const powHeaders = await getPowHeaders();
-    const response = await fetch(url, { headers: { ...DEFAULT_HEADERS, ...powHeaders } });
+    await waitForGlobalRateLimit();
+    const protectedStartedAt = performance.now();
+    metrics.protectedRequests += 1;
+    const response = await runWithTemporarySerialGate(() => fetchWithTimeout(url, { headers: { ...DEFAULT_HEADERS, ...powHeaders } }));
+    metrics.protectedMs += performance.now() - protectedStartedAt;
     if (response.ok) return readResponsePayload(response, label);
 
     const body = await response.text();
     lastError = new Error(`${label} failed on attempt ${attempt}: ${response.status} ${response.statusText}\n${body.slice(0, 300)}`);
     if (response.status === 429) {
-      console.log(`[rate-limit] ${label} 429, wait ${RATE_LIMIT_DELAY_MS / 1000}s`);
-      await sleep(RATE_LIMIT_DELAY_MS);
+      metrics.rateLimits += 1;
+      const delay = RATE_LIMIT_DELAY_MS + Math.floor(Math.random() * 3000);
+      rateLimitUntil = Math.max(rateLimitUntil, Date.now() + delay);
+      serialUntil = Math.max(serialUntil, Date.now() + delay + RATE_LIMIT_RECOVERY_MS);
+      console.log(`[rate-limit] ${label} 429, wait ${Math.round(delay / 1000)}s`);
+      await sleep(delay);
+      continue;
+    }
+    if ([502, 503, 504].includes(response.status) && attempt < MAX_ATTEMPTS) {
+      metrics.transientErrors += 1;
+      const delay = REQUEST_DELAY_MS * attempt + Math.floor(Math.random() * 1000);
+      console.log(`[transient] ${label} ${response.status}, retry in ${delay}ms`);
+      await sleep(delay);
       continue;
     }
     throw lastError;
@@ -238,6 +338,7 @@ async function runWithConcurrency(items, limit, worker) {
 }
 
 async function scrapeLive() {
+  resetMetrics();
   const startedAt = new Date().toISOString();
   const snapshots = await runWithConcurrency(JOBS, CONCURRENCY, async (job) => {
     const payload = await fetchProtectedJson(job.route, job.params, job.key);
@@ -259,6 +360,7 @@ async function scrapeLive() {
     startedAt,
     completedAt: new Date().toISOString(),
     concurrency: CONCURRENCY,
+    metrics: getMetrics(),
     snapshots,
   };
 }
@@ -268,6 +370,7 @@ module.exports = {
   KOL_DURATIONS,
   JOBS,
   buildJobs,
+  getMetrics,
   normalizeItems,
   scrapeLive,
 };
