@@ -128,6 +128,29 @@ function arenaPayload(snapshots) {
   return payload;
 }
 
+function classicPayload(snapshots) {
+  const payload = {};
+  for (const entry of CLASSIC_DATASETS) {
+    const key = `${entry.source}:${entry.dataset}`;
+    const durations = entry.durations || DURATIONS;
+    payload[key] = {
+      dataset: entry.dataset,
+      durations,
+      rows: {},
+    };
+    for (const duration of durations) {
+      payload[key].rows[duration] = snapshotItems(snapshots, entry.source, duration, entry.dataset).slice(0, 50).map((item, index) => ({
+        rank: item?.rank || item?.snapshot_rank || index + 1,
+        name: itemName(item, entry.dataset),
+        subline: itemSubline(item),
+        value: itemMindshare(item, entry.dataset, duration),
+        delta: itemDelta(item, duration),
+      }));
+    }
+  }
+  return payload;
+}
+
 function summaryCards(snapshots) {
   const arenaCount = Object.keys(snapshots).filter((key) => key.startsWith('arena-')).length;
   const cards = [
@@ -154,20 +177,23 @@ function arenaCounts(snapshots) {
 
 function classicSections(snapshots) {
   return CLASSIC_DATASETS.map((entry) => {
-    const duration = entry.defaultDuration || (entry.durations || DURATIONS)[0];
-    const items = snapshotItems(snapshots, entry.source, duration, entry.dataset);
+    const durations = entry.durations || DURATIONS;
+    const duration = entry.defaultDuration || durations[0];
+    const key = `${entry.source}:${entry.dataset}`;
     return `<section class="panel classic-card">
       <div class="panel-head">
         <div><p class="eyebrow">Classic</p><h3>${esc(entry.title)}</h3></div>
-        <span class="pill">${esc(duration)}</span>
+        <span class="pill" data-classic-count="${esc(key)}">0 items</span>
       </div>
-      <div class="table-wrap">${tableRows(items, {
-        dataset: entry.dataset,
-        duration,
-        nameHeader: entry.label,
-        valueHeader: entry.value,
-        limit: 12,
-      })}</div>
+      <div class="classic-controls" data-classic-control="${esc(key)}">
+        ${durations.map((itemDuration) => `<button type="button" data-duration="${esc(itemDuration)}" class="${itemDuration === duration ? 'active' : ''}">${esc(itemDuration)}</button>`).join('')}
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>${esc(entry.label)}</th><th>${esc(entry.value)}</th><th>Delta</th></tr></thead>
+          <tbody data-classic-body="${esc(key)}"></tbody>
+        </table>
+      </div>
     </section>`;
   }).join('');
 }
@@ -175,7 +201,9 @@ function classicSections(snapshots) {
 function renderDashboard(store) {
   const snapshots = store.snapshots || {};
   const arenaData = arenaPayload(snapshots);
+  const classicData = classicPayload(snapshots);
   const arenaJson = JSON.stringify(arenaData).replace(/</g, '\\u003c');
+  const classicJson = JSON.stringify(classicData).replace(/</g, '\\u003c');
 
   return `<!doctype html>
 <html lang="en">
@@ -194,7 +222,7 @@ function renderDashboard(store) {
     .controls{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px;background:#0d1013}.control-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.control-label{width:72px;color:var(--muted);font-size:12px;text-transform:uppercase}.seg{display:flex;gap:6px;flex-wrap:wrap}.seg button.active{background:var(--accent);border-color:var(--accent);color:#04110f;font-weight:750}.seg button:disabled{opacity:.35;cursor:not-allowed}
     .arena-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}.count-block{border:1px solid var(--line);border-radius:8px;padding:10px;background:#0d1013}.count-title{font-size:13px;color:var(--muted);margin-bottom:8px}.count-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.count-cell{border:1px solid #20262d;border-radius:7px;padding:8px}.count-cell span{display:block;color:var(--muted);font-size:11px}.count-cell strong{display:block;margin-top:3px;font-size:18px}
     .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:620px}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:middle}th{color:var(--muted);font-weight:650;background:#101419;position:sticky;top:0;z-index:1}.rank{width:54px;color:var(--muted)}.name{font-weight:700}.sub{margin-top:2px;color:var(--muted);font-size:12px}.num{text-align:right;font-variant-numeric:tabular-nums}.pos{color:var(--good)}.neg{color:var(--bad)}.flat{color:var(--muted)}tr:hover td{background:rgba(66,199,183,.045)}.empty{text-align:center;color:var(--muted);padding:24px}
-    .side{display:grid;gap:16px}.classic-grid{display:grid;gap:12px}.classic-card table{min-width:520px}.classic-card .panel-head{padding:12px 14px}.classic-card .panel-head h3{font-size:16px}.classic-card th,.classic-card td{padding:8px 10px}
+    .side{display:grid;gap:16px}.classic-grid{display:grid;gap:12px}.classic-card table{min-width:520px}.classic-card .panel-head{padding:12px 14px}.classic-card .panel-head h3{font-size:16px}.classic-card th,.classic-card td{padding:8px 10px}.classic-controls{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#0d1013}.classic-controls button{height:28px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--muted);padding:0 9px;font-size:12px;cursor:pointer}.classic-controls button.active{background:var(--accent2);border-color:var(--accent2);color:#171104;font-weight:750}
     .api-list{padding:14px 16px;display:grid;gap:10px}.api-line{display:flex;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:7px;padding:9px 10px;background:#0d1013}.api-line code{color:var(--accent);font-size:12px;white-space:nowrap}.api-line span{color:var(--muted);font-size:12px;text-align:right}
     @media (max-width:980px){.topbar{display:block}.actions{justify-content:flex-start;margin-top:12px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}.arena-summary{grid-template-columns:1fr}.control-label{width:100%;}.control-row{display:block}.seg{margin-top:6px}}
     @media (max-width:560px){.wrap{width:min(100vw - 20px,1480px);margin-top:14px}.metrics{grid-template-columns:1fr}.metric-value{font-size:22px}h1{font-size:25px}.panel-head{align-items:flex-start}.api-line{display:block}.api-line span{display:block;text-align:left;margin-top:5px}}
@@ -218,7 +246,7 @@ function renderDashboard(store) {
     <main class="layout">
       <section class="panel">
         <div class="panel-head">
-          <div><p class="eyebrow">Arena</p><h2 id="arena-title">Top Voices · Stock · 7d</h2></div>
+          <div><p class="eyebrow">Arena</p><h2 id="arena-title">Top Voices - Stock - 7d</h2></div>
           <span class="pill" id="arena-count">0 items</span>
         </div>
         <div class="controls">
@@ -260,6 +288,7 @@ function renderDashboard(store) {
   </div>
   <script>
     const ARENA_DATA = ${arenaJson};
+    const CLASSIC_DATA = ${classicJson};
     const DURATIONS = ${JSON.stringify(DURATIONS)};
     const VOICE_DURATIONS = ${JSON.stringify(ARENA_VOICE_DURATIONS)};
     const COMPANY_DURATIONS = ${JSON.stringify(ARENA_COMPANY_DURATIONS)};
@@ -295,6 +324,23 @@ function renderDashboard(store) {
         return '<tr><td class="rank">' + escapeHtml(item.rank) + '</td><td><div class="name">' + escapeHtml(item.name) + '</div>' + subline + '</td><td class="num">' + fmtPct(item.mindshare) + '</td><td class="num ' + deltaClass + '">' + fmtPct(item.delta, true) + '</td></tr>';
       }).join('') || '<tr><td colspan="4" class="empty">No cached data yet</td></tr>';
     }
+    function renderClassic(key, duration) {
+      const block = CLASSIC_DATA[key];
+      if (!block) return;
+      const items = ((block.rows || {})[duration] || []);
+      const body = document.querySelector('[data-classic-body="' + key + '"]');
+      const count = document.querySelector('[data-classic-count="' + key + '"]');
+      if (count) count.textContent = items.length + ' items';
+      document.querySelectorAll('[data-classic-control="' + key + '"] button').forEach((button) => {
+        button.classList.toggle('active', button.dataset.duration === duration);
+      });
+      if (!body) return;
+      body.innerHTML = items.slice(0, 12).map((item) => {
+        const deltaClass = item.delta > 0 ? 'pos' : item.delta < 0 ? 'neg' : 'flat';
+        const subline = item.subline ? '<div class="sub">' + escapeHtml(item.subline) + '</div>' : '';
+        return '<tr><td class="rank">' + escapeHtml(item.rank) + '</td><td><div class="name">' + escapeHtml(item.name) + '</div>' + subline + '</td><td class="num">' + fmtPct(item.value, block.dataset === 'topDelta') + '</td><td class="num ' + deltaClass + '">' + fmtPct(item.delta, true) + '</td></tr>';
+      }).join('') || '<tr><td colspan="4" class="empty">No cached data yet</td></tr>';
+    }
     document.querySelectorAll('[data-control] button').forEach((button) => {
       button.addEventListener('click', () => {
         if (button.disabled) return;
@@ -302,7 +348,13 @@ function renderDashboard(store) {
         renderArena();
       });
     });
+    document.querySelectorAll('[data-classic-control] button').forEach((button) => {
+      button.addEventListener('click', () => {
+        renderClassic(button.parentElement.dataset.classicControl, button.dataset.duration);
+      });
+    });
     renderArena();
+    Object.entries(CLASSIC_DATA).forEach(([key, block]) => renderClassic(key, block.durations[0]));
   </script>
 </body>
 </html>`;
