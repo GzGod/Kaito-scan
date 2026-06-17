@@ -1,8 +1,9 @@
 const { renderDashboard } = require('./dashboard');
 const { getNextFiveMinute, runUpdate } = require('./worker');
 const { getDatabaseStatus, getSnapshot, getStore, listSnapshots } = require('./store');
-const { getHistoricalSnapshot, getRunSnapshots, listRuns, listSnapshotHistory } = require('./db');
-const { DATASET_ROUTES, SUPPORTED_DURATIONS } = require('./routes');
+const { getHistoricalSnapshot, getRunSnapshots, hasDatabase, listRuns, listSnapshotHistory, querySnapshotHistory } = require('./db');
+const { parseHistoryQuery } = require('./history-query');
+const { DATASET_ROUTES, SUPPORTED_DURATIONS, getRequestedVertical } = require('./routes');
 const { getCachedJson, setCachedJson } = require('./response-cache');
 const { filterSnapshot, getRequestedDuration, sendHtml, sendJson, sendJsonBody } = require('./http-utils');
 
@@ -91,7 +92,18 @@ async function sendDatasetSnapshot(req, url, res, route) {
   }
 
   const limit = Number(url.searchParams.get('limit') || 0);
-  const key = `${route.source}:${duration}:${route.dataset}`;
+  let source = route.source;
+  if (route.sourcePrefix) {
+    const vertical = getRequestedVertical(url, route.defaultVertical, route.verticals);
+    if (!vertical) {
+      return sendJson(res, 400, {
+        error: 'unsupported vertical',
+        supportedVerticals: route.verticals,
+      });
+    }
+    source = `${route.sourcePrefix}-${vertical}`;
+  }
+  const key = `${source}:${duration}:${route.dataset}`;
   if (!limit && sendCachedJson(req, res, `snapshot:${key}`)) return;
   const snapshot = filterSnapshot(getSnapshot(key), limit);
   if (!snapshot) return sendJson(res, 404, { error: 'snapshot not found', key });
@@ -101,6 +113,38 @@ async function sendDatasetSnapshot(req, url, res, route) {
 }
 
 async function handleHistoryRoute(url, res) {
+  if (url.pathname === '/api/history/query') {
+    const parsed = parseHistoryQuery(url);
+    if (!parsed.ok) {
+      const { status, ...body } = parsed;
+      sendJson(res, status, body);
+      return true;
+    }
+    if (!hasDatabase()) {
+      sendJson(res, 503, { error: 'database unavailable' });
+      return true;
+    }
+    let history;
+    try {
+      history = await querySnapshotHistory(parsed.query);
+    } catch (error) {
+      console.error('history query failed:', error.message);
+      sendJson(res, 503, { error: 'database unavailable' });
+      return true;
+    }
+    sendJson(res, 200, {
+      source: parsed.query.source,
+      dataset: parsed.query.dataset,
+      duration: parsed.query.duration,
+      interval: parsed.query.interval,
+      from: parsed.query.from,
+      to: parsed.query.to,
+      count: history.snapshots.length,
+      snapshots: history.snapshots,
+    });
+    return true;
+  }
+
   if (url.pathname === '/api/history/runs') {
     const limit = Number(url.searchParams.get('limit') || 24);
     sendJson(res, 200, { runs: await listRuns(limit) });

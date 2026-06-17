@@ -1,5 +1,7 @@
 const DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
 const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
+const ARENA_VOICE_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
+const ARENA_VERTICALS = ['stock', 'ai', 'crypto'];
 
 const DATASETS = [
   { source: 'pre-tge', dataset: 'heatmap', title: 'pre-tge', label: 'Ticker', value: 'Mindshare' },
@@ -7,6 +9,21 @@ const DATASETS = [
   { source: 'infomarkets', dataset: 'heatmap', title: 'infomarkets', label: 'Ticker', value: 'Mindshare' },
   { source: 'exchange', dataset: 'heatmap', title: 'exchange', label: 'Ticker', value: 'Mindshare' },
   { source: 'infomarkets', dataset: 'kols', title: 'infomarkets KOL', label: 'Username', value: 'Mindshare', durations: KOL_DURATIONS },
+  ...ARENA_VERTICALS.map((vertical) => ({
+    source: `arena-voices-${vertical}`,
+    dataset: 'leaderboard',
+    title: `Top Voices ${vertical}`,
+    label: 'Username',
+    value: 'Mindshare',
+    durations: ARENA_VOICE_DURATIONS,
+  })),
+  ...ARENA_VERTICALS.map((vertical) => ({
+    source: `arena-companies-${vertical}`,
+    dataset: 'leaderboard',
+    title: `Top Companies ${vertical}`,
+    label: 'Company',
+    value: 'Mindshare',
+  })),
 ];
 
 function pct(v) {
@@ -38,7 +55,7 @@ function firstNumber(item, fields) {
 }
 
 function itemLabel(item, dataset) {
-  if (dataset === 'kols') return item?.username ? `@${item.username}` : item?.name || item?.id || '';
+  if (dataset === 'kols' || item?.username) return item?.username ? `@${item.username}` : item?.name || item?.id || '';
   return item?.ticker || item?.symbol || item?.name || '';
 }
 

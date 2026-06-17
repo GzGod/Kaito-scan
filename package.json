@@ -6,7 +6,7 @@
     "scripts":  {
                     "start":  "node src/server.js",
                     "scrape":  "node kaito-live-fast-scrape.js",
-                    "check":  "node --check src/server.js \u0026\u0026 node --check src/scraper.js \u0026\u0026 node --check src/store.js \u0026\u0026 node --check src/db.js \u0026\u0026 node --check src/worker.js \u0026\u0026 node --check src/dashboard.js"
+                    "check":  "node --check src/server.js \u0026\u0026 node --check src/api.js \u0026\u0026 node --check src/routes.js \u0026\u0026 node --check src/scraper.js \u0026\u0026 node --check src/store.js \u0026\u0026 node --check src/db.js \u0026\u0026 node --check src/worker.js \u0026\u0026 node --check src/dashboard.js \u0026\u0026 node --check src/history-query.js"
                 },
     "dependencies":  {
                          "crypto-js":  "^4.2.0",

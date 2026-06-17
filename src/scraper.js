@@ -1,8 +1,10 @@
 const crypto = require('crypto');
 const CryptoJS = require('crypto-js');
+const { ARENA_COMPANY_DURATIONS, ARENA_VERTICALS, ARENA_VOICE_DURATIONS } = require('./routes');
 
 const BASE_URL = 'https://hub.kaito.ai/api/v1';
 const AI_BASE_URL = `${BASE_URL}/gateway/ai`;
+const ARENA_BASE_URL = BASE_URL;
 const RESPONSE_KEY_HEX = 'ab962e791e6675b2';
 const RESPONSE_IV_HEX = '22d28b1b5b4e0a4d';
 const REQUEST_DELAY_MS = 500;
@@ -13,6 +15,12 @@ const RATE_LIMIT_RECOVERY_MS = Number(process.env.SCRAPE_RATE_LIMIT_RECOVERY_MS 
 const FETCH_TIMEOUT_MS = Number(process.env.SCRAPE_FETCH_TIMEOUT_MS || 30000);
 const DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
 const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
+const ARENA_LEADERBOARD_LIMIT = 100;
+
+const PROTECTED_BASE_URLS = {
+  ai: AI_BASE_URL,
+  arena: ARENA_BASE_URL,
+};
 
 const metrics = {
   challengeRequests: 0,
@@ -77,6 +85,7 @@ function tickerMindshareJob({ source, dataset, duration, params }) {
     source,
     dataset,
     duration,
+    service: 'ai',
     route: 'tickers/mindshare',
     params: { ...params, duration },
   };
@@ -88,8 +97,34 @@ function kolMindshareJob({ source, duration, params }) {
     source,
     dataset: 'kols',
     duration,
+    service: 'ai',
     route: 'kol/mindshare/top-leaderboard',
     params: { ...params, duration },
+  };
+}
+
+function arenaRouteVertical(mode, vertical) {
+  if (vertical !== 'stock') return vertical;
+  return mode === 'companies' ? 'equity' : 'trading';
+}
+
+function arenaLeaderboardJob({ mode, vertical, duration }) {
+  const source = `arena-${mode}-${vertical}`;
+  const routeVertical = arenaRouteVertical(mode, vertical);
+  const companyPrefix = mode === 'companies' ? 'company_' : '';
+  return {
+    key: `${source}:${duration}:leaderboard`,
+    source,
+    dataset: 'leaderboard',
+    duration,
+    service: 'arena',
+    route: `voices/${routeVertical}/${companyPrefix}sector_leaderboard`,
+    params: {
+      sector: 'ALL',
+      duration,
+      offset: 0,
+      limit: ARENA_LEADERBOARD_LIMIT,
+    },
   };
 }
 
@@ -167,8 +202,18 @@ function kolJobs() {
   }));
 }
 
+function arenaJobs() {
+  const voiceJobs = ARENA_VERTICALS.flatMap((vertical) => (
+    ARENA_VOICE_DURATIONS.map((duration) => arenaLeaderboardJob({ mode: 'voices', vertical, duration }))
+  ));
+  const companyJobs = ARENA_VERTICALS.flatMap((vertical) => (
+    ARENA_COMPANY_DURATIONS.map((duration) => arenaLeaderboardJob({ mode: 'companies', vertical, duration }))
+  ));
+  return [...voiceJobs, ...companyJobs];
+}
+
 function buildJobs() {
-  return [...tickerJobs(), ...kolJobs()];
+  return [...tickerJobs(), ...kolJobs(), ...arenaJobs()];
 }
 
 const JOBS = buildJobs();
@@ -274,8 +319,10 @@ async function getPowHeaders() {
   throw lastError;
 }
 
-async function fetchProtectedJson(route, params, label) {
-  const url = new URL(route, `${AI_BASE_URL}/`);
+async function fetchProtectedJson(route, params, label, service = 'ai') {
+  const baseUrl = PROTECTED_BASE_URLS[service];
+  if (!baseUrl) throw new Error(`Unsupported protected API service: ${service}`);
+  const url = new URL(route, `${baseUrl}/`);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
   });
@@ -341,13 +388,14 @@ async function scrapeLive() {
   resetMetrics();
   const startedAt = new Date().toISOString();
   const snapshots = await runWithConcurrency(JOBS, CONCURRENCY, async (job) => {
-    const payload = await fetchProtectedJson(job.route, job.params, job.key);
+    const payload = await fetchProtectedJson(job.route, job.params, job.key, job.service);
     const items = normalizeItems(payload);
     return {
       key: job.key,
       source: job.source,
       dataset: job.dataset,
       duration: job.duration,
+      service: job.service,
       route: job.route,
       params: job.params,
       updatedAt: new Date().toISOString(),
@@ -366,9 +414,13 @@ async function scrapeLive() {
 }
 
 module.exports = {
+  ARENA_COMPANY_DURATIONS,
+  ARENA_VERTICALS,
+  ARENA_VOICE_DURATIONS,
   DURATIONS,
   KOL_DURATIONS,
   JOBS,
+  arenaRouteVertical,
   buildJobs,
   getMetrics,
   normalizeItems,

@@ -1,69 +1,36 @@
 # Kaito Scan 使用文档
 
-Kaito Scan 会把 Kaito 的 mindshare 数据先缓存下来，再通过你自己的 API 对外提供。
+Kaito Scan 会按小时抓取 Kaito 数据，写入本地缓存和 Railway Postgres，然后通过你自己的 API 对外提供。
 
 ## 基础地址
 
-生产环境：
-
+```text
 https://kaito-scan-production.up.railway.app
+```
 
-## 身份验证
+## 鉴权
 
-所有 `/api/*` 路由都需要带 Authorization 头：
+所有 `/api/*` 路由都需要：
 
 ```text
 Authorization: Bearer YOUR_API_KEY
 ```
 
-仪表盘 `/` 是公开的。
+首页 `/` 是公开 Dashboard。
 
 ## 更新频率
 
-- worker 每小时在 `05` 分更新一次。
-- 例如：`08:05`、`09:05`、`10:05`。
-- API 只读取缓存快照，不会临时请求 Kaito。
-- 默认抓取并发数是 `5`。
+- 每小时 `05` 分更新一次，例如 `08:05`、`09:05`。
+- API 只读缓存快照，不会因为外部请求临时打 Kaito。
+- 默认抓取并发由 `SCRAPE_CONCURRENCY` 控制。
 
-## 支持的时间跨度
+## 实时数据接口
 
-当前每个数据集支持这些跨度：
-
-```text
-24h, 7d, 30d, 3m, 6m, 12m
-```
-
-## 当前数据集
-
-对每个支持的跨度，服务会抓取这些 ticker 快照：
+### 全部数据
 
 ```text
-pre-tge:<duration>:heatmap
-pre-tge:<duration>:topDelta
-infomarkets:<duration>:heatmap
-exchange:<duration>:heatmap
+GET /api/live
 ```
-
-Info KOL 只抓这些跨度：
-
-```text
-infomarkets:7d:kols
-infomarkets:30d:kols
-infomarkets:3m:kols
-infomarkets:6m:kols
-infomarkets:12m:kols
-```
-
-也就是说，每次更新共有 `29` 个缓存快照。
-
-暂未支持：
-
-```text
-ct-leaderboard
-vcarena
-```
-
-## API 接口
 
 ### 状态
 
@@ -71,100 +38,91 @@ vcarena
 GET /api/status
 ```
 
-返回更新状态、下一次计划更新时间、最近一次运行信息、错误信息和可用快照 key。
+返回最近更新时间、下次更新时间、最近一次运行状态、数据库状态、当前快照 key 列表。
 
-```bash
-curl https://kaito-scan-production.up.railway.app/api/status \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
+## 已支持数据集
 
-### 全部实时数据
-
-```text
-GET /api/live
-```
-
-返回当前所有快照。
-
-```bash
-curl https://kaito-scan-production.up.railway.app/api/live \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### pre-tge 热力图
+### 原有 Mindshare 数据
 
 ```text
 GET /api/pre-tge?duration=24h&limit=50
-```
-
-`duration` 可选：`24h`、`7d`、`30d`、`3m`、`6m`、`12m`。默认是 `24h`。
-
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/pre-tge?duration=7d&limit=50" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### pre-tge Top Delta
-
-```text
 GET /api/pre-tge/top-delta?duration=24h&limit=50
-```
-
-默认跨度是 `24h`。
-
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/pre-tge/top-delta?duration=30d&limit=50" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### infomarkets 热力图
-
-```text
 GET /api/infomarkets?duration=24h&limit=50
+GET /api/infomarkets/kols?duration=7d&limit=50
+GET /api/exchange?duration=24h&limit=50
 ```
 
-默认跨度是 `24h`。
-
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/infomarkets?duration=3m&limit=50" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### infomarkets KOL 排行榜
+支持时间跨度：
 
 ```text
-GET /api/infomarkets/kols?duration=7d&limit=50
+24h, 7d, 30d, 3m, 6m, 12m
 ```
 
-默认跨度是 `7d`。
-
-Info KOL 支持：
+注意：`/api/infomarkets/kols` 不支持 `24h`，只支持：
 
 ```text
 7d, 30d, 3m, 6m, 12m
 ```
 
-Kaito 目前不接受这个接口的 `24h`。
-
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/infomarkets/kols?duration=12m&limit=100" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### exchange 热力图
+### 新版 Arena Top Voices
 
 ```text
-GET /api/exchange?duration=24h&limit=50
+GET /api/arena/voices?vertical=stock&duration=7d&limit=50
 ```
 
-默认跨度是 `24h`。
+参数：
+
+```text
+vertical=stock | ai | crypto
+duration=7d | 30d | 3m | 6m | 12m
+limit=50
+```
+
+示例：
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/exchange?duration=30d&limit=50" \
+curl "https://kaito-scan-production.up.railway.app/api/arena/voices?vertical=crypto&duration=7d&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### 按 key 读取任意快照
+快照 key 格式：
+
+```text
+arena-voices-stock:<duration>:leaderboard
+arena-voices-ai:<duration>:leaderboard
+arena-voices-crypto:<duration>:leaderboard
+```
+
+### 新版 Arena Top Companies
+
+```text
+GET /api/arena/companies?vertical=stock&duration=24h&limit=50
+```
+
+参数：
+
+```text
+vertical=stock | ai | crypto
+duration=24h | 7d | 30d | 3m | 6m | 12m
+limit=50
+```
+
+示例：
+
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/arena/companies?vertical=stock&duration=24h&limit=100" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+快照 key 格式：
+
+```text
+arena-companies-stock:<duration>:leaderboard
+arena-companies-ai:<duration>:leaderboard
+arena-companies-crypto:<duration>:leaderboard
+```
+
+## 按 key 读取任意快照
 
 ```text
 GET /api/snapshot/:key?limit=50
@@ -173,130 +131,88 @@ GET /api/snapshot/:key?limit=50
 示例：
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/snapshot/pre-tge:24h:heatmap?limit=50" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-
-curl "https://kaito-scan-production.up.railway.app/api/snapshot/infomarkets:12m:kols?limit=100" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### 手动更新
-
-```text
-POST /api/admin/update
-```
-
-手动触发一次新的抓取。
-
-```bash
-curl -X POST https://kaito-scan-production.up.railway.app/api/admin/update \
+curl "https://kaito-scan-production.up.railway.app/api/snapshot/arena-voices-stock:7d:leaderboard?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ## 返回格式
 
-单个快照响应示例：
-
 ```json
 {
-  "key": "pre-tge:7d:heatmap",
-  "source": "pre-tge",
-  "dataset": "heatmap",
+  "key": "arena-voices-crypto:7d:leaderboard",
+  "source": "arena-voices-crypto",
+  "dataset": "leaderboard",
   "duration": "7d",
-  "updatedAt": "2026-05-20T00:05:12.000Z",
-  "count": 50,
+  "updatedAt": "2026-06-17T15:05:12.000Z",
+  "count": 100,
   "data": []
 }
 ```
 
-如果传了 `limit`，`data` 数组只会返回前 N 条。
+`limit` 只限制响应里的 `data` 数组长度，不改变数据库里保存的原始快照。
 
-## Railway 环境变量
+## 历史数据接口
 
-建议配置：
+配置 `DATABASE_URL` 后，每次成功抓取都会写入 Railway Postgres。
 
 ```text
-SCRAPE_CONCURRENCY=5
+GET /api/history/query
+```
+
+参数：
+
+```text
+source=pre-tge | infomarkets | exchange | arena-voices-stock | arena-voices-ai | arena-voices-crypto | arena-companies-stock | arena-companies-ai | arena-companies-crypto
+dataset=heatmap | topDelta | kols | leaderboard
+duration=24h | 7d | 30d | 3m | 6m | 12m
+from=2026-06-01
+to=2026-06-09
+interval=hour | day
+limit=50
+```
+
+规则：
+
+- `interval=hour`：返回范围内每小时抓到的快照。
+- `interval=day`：按北京时间自然日分组，每天返回当天最新一条快照。
+- `limit`：限制每个 snapshot 内 `data` 返回前 N 条，默认 `50`，最大 `500`。
+- `from/to`：按北京时间日期解析；不传 `to` 默认今天，不传 `from` 默认最近 7 天。
+
+示例：
+
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/history/query?source=arena-companies-stock&dataset=leaderboard&duration=24h&interval=day&limit=100" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## 环境变量
+
+```text
 API_KEY=YOUR_API_KEY
+DATABASE_URL=postgresql://...
+SCRAPE_CONCURRENCY=5
+SCRAPE_FETCH_TIMEOUT_MS=30000
+SCRAPE_RATE_LIMIT_RECOVERY_MS=5000
 ```
 
 Railway 会自动提供 `PORT`。
 
 ## 本地运行
 
-安装依赖：
-
 ```bash
 npm install
-```
-
-启动服务：
-
-```bash
 npm start
 ```
 
-打开：
+本地地址：
 
 ```text
 http://localhost:3000
-http://localhost:3000/api/status
 ```
 
-如果设置了 `API_KEY`，本地调用 API 时也要带上授权头。
-
-## 备注
-
-- API 用户读取的是缓存快照。
-- API 请求不会去实时打 Kaito。
-- 服务每小时在 `05` 分更新。
-- Railway 文件系统不适合长期保存历史数据。
-- 如果要保留长期历史，后面可以加 Postgres 或对象存储。
-
-## 历史数据 API
-
-配置 `DATABASE_URL` 后，每次成功抓取都会写入 Postgres。
-
-### 查看最近的抓取批次
+## 当前不支持
 
 ```text
-GET /api/history/runs?limit=24
-```
-
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/runs?limit=24" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### 查看某一批次里的快照
-
-```text
-GET /api/history/run/:runId
-```
-
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/run/1" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### 查看某个快照 key 的历史记录
-
-```text
-GET /api/history/snapshot/:key?limit=24
-```
-
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/snapshot/pre-tge:24h:heatmap?limit=24" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### 读取某一条历史快照
-
-```text
-GET /api/history/item/:id?limit=50
-```
-
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/item/1?limit=50" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+ct-leaderboard
+vcarena
 ```

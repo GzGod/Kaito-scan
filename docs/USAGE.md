@@ -49,7 +49,21 @@ Info KOL snapshots are collected for 7d, 30d, 3m, 6m, and 12m only:
 infomarkets:<duration>:kols
 ```
 
-That is `29` snapshots per update.
+New Arena snapshots:
+
+```text
+arena-voices-stock:<duration>:leaderboard
+arena-voices-ai:<duration>:leaderboard
+arena-voices-crypto:<duration>:leaderboard
+arena-companies-stock:<duration>:leaderboard
+arena-companies-ai:<duration>:leaderboard
+arena-companies-crypto:<duration>:leaderboard
+```
+
+Top Voices supports `7d`, `30d`, `3m`, `6m`, and `12m`.
+Top Companies supports `24h`, `7d`, `30d`, `3m`, `6m`, and `12m`.
+
+That is `62` snapshots per update.
 
 Not available yet:
 
@@ -151,6 +165,32 @@ curl "https://kaito-scan-production.up.railway.app/api/exchange?duration=30d&lim
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
+### Arena Top Voices
+
+```text
+GET /api/arena/voices?vertical=stock&duration=7d&limit=50
+```
+
+`vertical` can be `stock`, `ai`, or `crypto`. Top Voices supports `7d`, `30d`, `3m`, `6m`, and `12m`.
+
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/arena/voices?vertical=crypto&duration=7d&limit=100" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Arena Top Companies
+
+```text
+GET /api/arena/companies?vertical=stock&duration=24h&limit=50
+```
+
+`vertical` can be `stock`, `ai`, or `crypto`. Top Companies supports `24h`, `7d`, `30d`, `3m`, `6m`, and `12m`.
+
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/arena/companies?vertical=stock&duration=24h&limit=100" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
 ### Read Any Snapshot By Key
 
 ```text
@@ -244,6 +284,59 @@ For local API calls, include your API key if `API_KEY` is set.
 ## History API
 
 When `DATABASE_URL` is configured, every successful scrape is stored in Postgres.
+
+### Query Historical Snapshots
+
+```text
+GET /api/history/query
+```
+
+Query parameters:
+
+```text
+source=pre-tge | infomarkets | exchange
+dataset=heatmap | topDelta | kols
+duration=24h | 7d | 30d | 3m | 6m | 12m
+from=2026-06-01
+to=2026-06-09
+interval=hour | day
+limit=50
+```
+
+Arena history sources are concrete per vertical:
+
+```text
+arena-voices-stock
+arena-voices-ai
+arena-voices-crypto
+arena-companies-stock
+arena-companies-ai
+arena-companies-crypto
+```
+
+Use `dataset=leaderboard` for Arena history.
+
+`interval=hour` returns every hourly snapshot in the range. `interval=day` groups by Asia/Shanghai calendar day and returns the latest snapshot for each day. `limit` caps items inside each snapshot; default is `50`, maximum is `500`.
+
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/history/query?source=pre-tge&dataset=heatmap&duration=24h&from=2026-06-01&to=2026-06-09&interval=day&limit=50" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Response:
+
+```json
+{
+  "source": "pre-tge",
+  "dataset": "heatmap",
+  "duration": "24h",
+  "interval": "day",
+  "from": "2026-06-01",
+  "to": "2026-06-09",
+  "count": 9,
+  "snapshots": []
+}
+```
 
 ### List Recent Runs
 
