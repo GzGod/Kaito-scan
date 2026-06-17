@@ -1,12 +1,14 @@
 # Kaito Scan 使用文档
 
-Kaito Scan 会按小时抓取 Kaito 数据，写入本地缓存和 Railway Postgres，然后通过你自己的 API 对外提供。
+Kaito Scan 会按小时抓取 Kaito 数据，写入内存缓存和 Railway Postgres，然后通过你自己的 API 对外提供。
 
 ## 基础地址
 
 ```text
 https://kaito-scan-production.up.railway.app
 ```
+
+首页 `/` 是公开 Dashboard。新版 Dashboard 已按 `Top Voices / Top Companies`、`stock / ai / crypto`、时间跨度做分类切换，不展示 logo，避免额外资源加载。
 
 ## 鉴权
 
@@ -16,21 +18,13 @@ https://kaito-scan-production.up.railway.app
 Authorization: Bearer YOUR_API_KEY
 ```
 
-首页 `/` 是公开 Dashboard。
-
 ## 更新频率
 
 - 每小时 `05` 分更新一次，例如 `08:05`、`09:05`。
 - API 只读缓存快照，不会因为外部请求临时打 Kaito。
 - 默认抓取并发由 `SCRAPE_CONCURRENCY` 控制。
 
-## 实时数据接口
-
-### 全部数据
-
-```text
-GET /api/live
-```
+## 实时接口
 
 ### 状态
 
@@ -40,7 +34,11 @@ GET /api/status
 
 返回最近更新时间、下次更新时间、最近一次运行状态、数据库状态、当前快照 key 列表。
 
-## 已支持数据集
+### 全部实时数据
+
+```text
+GET /api/live
+```
 
 ### 原有 Mindshare 数据
 
@@ -52,7 +50,7 @@ GET /api/infomarkets/kols?duration=7d&limit=50
 GET /api/exchange?duration=24h&limit=50
 ```
 
-支持时间跨度：
+普通 ticker 数据支持：
 
 ```text
 24h, 7d, 30d, 3m, 6m, 12m
@@ -64,7 +62,15 @@ GET /api/exchange?duration=24h&limit=50
 7d, 30d, 3m, 6m, 12m
 ```
 
-### 新版 Arena Top Voices
+## Arena 接口
+
+详细调用文档见：
+
+```text
+docs/ARENA_API.zh-CN.md
+```
+
+### Top Voices
 
 ```text
 GET /api/arena/voices?vertical=stock&duration=7d&limit=50
@@ -81,22 +87,14 @@ limit=50
 示例：
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/arena/voices?vertical=crypto&duration=7d&limit=100" \
+curl "https://kaito-scan-production.up.railway.app/api/arena/voices?vertical=crypto&duration=30d&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-快照 key 格式：
+### Top Companies
 
 ```text
-arena-voices-stock:<duration>:leaderboard
-arena-voices-ai:<duration>:leaderboard
-arena-voices-crypto:<duration>:leaderboard
-```
-
-### 新版 Arena Top Companies
-
-```text
-GET /api/arena/companies?vertical=stock&duration=24h&limit=50
+GET /api/arena/companies?vertical=crypto&duration=7d&limit=50
 ```
 
 参数：
@@ -110,11 +108,25 @@ limit=50
 示例：
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/arena/companies?vertical=stock&duration=24h&limit=100" \
+curl "https://kaito-scan-production.up.railway.app/api/arena/companies?vertical=crypto&duration=12m&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-快照 key 格式：
+## 快照 Key
+
+```text
+GET /api/snapshot/:key?limit=50
+```
+
+Arena Top Voices：
+
+```text
+arena-voices-stock:<duration>:leaderboard
+arena-voices-ai:<duration>:leaderboard
+arena-voices-crypto:<duration>:leaderboard
+```
+
+Arena Top Companies：
 
 ```text
 arena-companies-stock:<duration>:leaderboard
@@ -122,16 +134,10 @@ arena-companies-ai:<duration>:leaderboard
 arena-companies-crypto:<duration>:leaderboard
 ```
 
-## 按 key 读取任意快照
-
-```text
-GET /api/snapshot/:key?limit=50
-```
-
 示例：
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/snapshot/arena-voices-stock:7d:leaderboard?limit=50" \
+curl "https://kaito-scan-production.up.railway.app/api/snapshot/arena-companies-crypto:7d:leaderboard?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -139,12 +145,12 @@ curl "https://kaito-scan-production.up.railway.app/api/snapshot/arena-voices-sto
 
 ```json
 {
-  "key": "arena-voices-crypto:7d:leaderboard",
-  "source": "arena-voices-crypto",
+  "key": "arena-companies-crypto:7d:leaderboard",
+  "source": "arena-companies-crypto",
   "dataset": "leaderboard",
   "duration": "7d",
-  "updatedAt": "2026-06-17T15:05:12.000Z",
-  "count": 100,
+  "updatedAt": "2026-06-17T16:29:47.442Z",
+  "count": 50,
   "data": []
 }
 ```
@@ -181,7 +187,7 @@ limit=50
 示例：
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/query?source=arena-companies-stock&dataset=leaderboard&duration=24h&interval=day&limit=100" \
+curl "https://kaito-scan-production.up.railway.app/api/history/query?source=arena-companies-crypto&dataset=leaderboard&duration=7d&interval=day&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
