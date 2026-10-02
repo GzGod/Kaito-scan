@@ -387,21 +387,38 @@ async function runWithConcurrency(items, limit, worker) {
 async function scrapeLive() {
   resetMetrics();
   const startedAt = new Date().toISOString();
-  const snapshots = await runWithConcurrency(JOBS, CONCURRENCY, async (job) => {
-    const payload = await fetchProtectedJson(job.route, job.params, job.key, job.service);
-    const items = normalizeItems(payload);
-    return {
-      key: job.key,
-      source: job.source,
-      dataset: job.dataset,
-      duration: job.duration,
-      service: job.service,
-      route: job.route,
-      params: job.params,
-      updatedAt: new Date().toISOString(),
-      count: items.length,
-      data: payload,
-    };
+  const snapshots = [];
+  const failures = [];
+
+  await runWithConcurrency(JOBS, CONCURRENCY, async (job) => {
+    try {
+      const payload = await fetchProtectedJson(job.route, job.params, job.key, job.service);
+      const items = normalizeItems(payload);
+      snapshots.push({
+        key: job.key,
+        source: job.source,
+        dataset: job.dataset,
+        duration: job.duration,
+        service: job.service,
+        route: job.route,
+        params: job.params,
+        updatedAt: new Date().toISOString(),
+        count: items.length,
+        data: payload,
+      });
+    } catch (error) {
+      const message = String(error?.message || error).slice(0, 1000);
+      failures.push({
+        key: job.key,
+        source: job.source,
+        dataset: job.dataset,
+        duration: job.duration,
+        service: job.service,
+        route: job.route,
+        message,
+      });
+      console.error(`[scrape] ${job.key} failed: ${message}`);
+    }
   });
 
   return {
@@ -410,6 +427,7 @@ async function scrapeLive() {
     concurrency: CONCURRENCY,
     metrics: getMetrics(),
     snapshots,
+    failures,
   };
 }
 
@@ -426,4 +444,3 @@ module.exports = {
   normalizeItems,
   scrapeLive,
 };
-

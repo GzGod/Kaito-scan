@@ -31,19 +31,29 @@ async function loadStore() {
 
 async function saveScrapeResult(result) {
   await ensureDataDir();
-  const snapshots = {};
+  const snapshots = { ...(memory.snapshots || {}) };
   for (const snapshot of result.snapshots) snapshots[snapshot.key] = snapshot;
+  const failures = Array.isArray(result.failures) ? result.failures : [];
+  const completedAt = result.completedAt || new Date().toISOString();
   memory = {
-    updatedAt: result.completedAt,
+    updatedAt: result.snapshots.length ? completedAt : memory.updatedAt,
     snapshots,
     lastRun: {
       startedAt: result.startedAt,
-      completedAt: result.completedAt,
+      completedAt,
       concurrency: result.concurrency,
       count: result.snapshots.length,
+      failedCount: failures.length,
+      failures,
       history: null,
     },
-    lastError: null,
+    lastError: failures.length
+      ? {
+          message: `${failures.length} scrape job${failures.length === 1 ? '' : 's'} failed`,
+          at: completedAt,
+          failures,
+        }
+      : null,
   };
   const history = await saveHistory(result);
   memory.lastRun.history = history;
@@ -89,4 +99,3 @@ module.exports = {
   saveScrapeResult,
   setError,
 };
-
