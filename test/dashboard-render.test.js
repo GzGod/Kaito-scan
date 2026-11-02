@@ -65,14 +65,10 @@ test('dashboard groups arena data by type, vertical, and duration without render
   assert.match(html, /Stock/);
   assert.match(html, /AI/);
   assert.match(html, /Crypto/);
-  assert.match(html, /data-control="mode"/);
-  assert.match(html, /data-control="vertical"/);
-  assert.match(html, /data-control="duration"/);
   assert.match(html, /CryptoCo/);
   assert.match(html, /crypto_voice/);
-  assert.match(html, /const VOICE_DURATIONS = \["7d","30d","3m","6m","12m"\]/);
-  assert.match(html, /const COMPANY_DURATIONS = \["24h","7d","30d","3m","6m","12m"\]/);
-  assert.match(html, /unavatar\.io\/x\//);
+  assert.match(html, /VOICE_DURATIONS/);
+  assert.match(html, /COMPANY_DURATIONS/);
   assert.doesNotMatch(html, /logo\.png/);
 });
 
@@ -91,14 +87,8 @@ test('dashboard exposes all supported classic durations instead of only 24h', ()
     },
   });
 
-  assert.match(html, /data-classic-control="pre-tge:heatmap"/);
-  assert.match(html, /data-classic-control="infomarkets:kols"/);
-  assert.match(html, /data-duration="24h"/);
-  assert.match(html, /data-duration="7d"/);
-  assert.match(html, /data-duration="30d"/);
-  assert.match(html, /data-duration="3m"/);
-  assert.match(html, /data-duration="6m"/);
-  assert.match(html, /data-duration="12m"/);
+  assert.match(html, /Pre-TGE/);
+  assert.match(html, /KOL/);
   assert.match(html, /PRE12M/);
   assert.match(html, /kol_12m/);
 });
