@@ -411,7 +411,7 @@ function render() {
           const dClass = ch > 0 ? 'up' : ch < 0 ? 'dn' : 'flat';
           const arrow = ch > 0 ? '↑' : ch < 0 ? '↓' : '';
           const avatarHtml = hasAvatar
-            ? (it.avatar ? '<img src="' + esc(it.avatar) + '" width="24" height="24" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="border-radius:50%;vertical-align:middle;margin-right:8px;flex-shrink:0">' : '<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--surface2);margin-right:8px;flex-shrink:0"></span>')
+            ? (it.avatar ? '<img src="' + esc(it.avatar) + '" width="24" height="24" loading="lazy" onerror="this.style.visibility=&quot;hidden&quot;" style="border-radius:50%;vertical-align:middle;margin-right:8px;flex-shrink:0">' : '<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--surface2);margin-right:8px;flex-shrink:0"></span>')
             : '';
           return '<tr>' +
             '<td class="td-rank">' + esc(it.rank) + '</td>' +
@@ -445,7 +445,7 @@ function render() {
         const arrow = d > 0 ? '↑' : d < 0 ? '↓' : '';
         const avatarHtml = hasAvatar
           ? (it.avatar
-              ? '<img src="' + esc(it.avatar) + '" width="24" height="24" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="border-radius:50%;vertical-align:middle;margin-right:8px;flex-shrink:0">'
+              ? '<img src="' + esc(it.avatar) + '" width="24" height="24" loading="lazy" onerror="this.style.visibility=&quot;hidden&quot;" style="border-radius:50%;vertical-align:middle;margin-right:8px;flex-shrink:0">'
               : '<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--surface2);margin-right:8px;flex-shrink:0"></span>')
           : '';
         return '<tr>' +
