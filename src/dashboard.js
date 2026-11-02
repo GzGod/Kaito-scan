@@ -151,14 +151,30 @@ function renderDashboard(store) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kaito Scan</title>
 <style>
+:root{
+  --surface-0:#0d0f12;
+  --surface-1:#13171c;
+  --surface-2:#1a1f26;
+  --text-primary:#e8edf2;
+  --text-secondary:#8a98a8;
+  --text-muted:#56636f;
+  --text-accent:#4cc9a0;
+  --text-success:#45d483;
+  --text-danger:#ff6b6b;
+  --border:rgba(255,255,255,0.08);
+  --border-strong:rgba(255,255,255,0.16);
+  --border-accent:rgba(76,201,160,0.4);
+  --bg-accent:rgba(76,201,160,0.1);
+  --radius:8px;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;font-size:16px;font-weight:400;line-height:1.7;color:var(--text-primary);background:transparent}
+body{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;font-size:16px;font-weight:400;line-height:1.7;color:var(--text-primary);background:var(--surface-0)}
 h2{font-size:18px;font-weight:500;color:var(--text-primary)}
 h3{font-size:16px;font-weight:500;color:var(--text-primary)}
-.page{padding:1.5rem 1rem 3rem}
+.page{padding:1.5rem 1.25rem 3rem}
 .topbar{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
 .site-name{font-size:22px;font-weight:500;color:var(--text-primary)}
-.site-meta{font-size:14px;color:var(--text-secondary);margin-top:2px}
+.site-meta{font-size:13px;color:var(--text-secondary);margin-top:2px}
 .topbar-links{display:flex;gap:8px}
 .topbar-links a{font-size:13px;color:var(--text-accent);text-decoration:none;border:0.5px solid var(--border);border-radius:var(--radius);padding:4px 10px}
 .topbar-links a:hover{border-color:var(--border-strong)}
@@ -168,15 +184,15 @@ h3{font-size:16px;font-weight:500;color:var(--text-primary)}
 .stat-value{font-size:22px;font-weight:500;color:var(--text-primary);font-variant-numeric:tabular-nums}
 .layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,0.9fr);gap:16px}
 .panel{border:0.5px solid var(--border);border-radius:12px;background:var(--surface-2);overflow:hidden}
-.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:0.5px solid var(--border)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:0.5px solid var(--border);background:var(--surface-1)}
 .badge{font-size:12px;color:var(--text-secondary);border:0.5px solid var(--border);border-radius:999px;padding:2px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.seg-row{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:0.5px solid var(--border);flex-wrap:wrap}
+.seg-row{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:0.5px solid var(--border);flex-wrap:wrap;background:var(--surface-1)}
 .seg-label{font-size:12px;color:var(--text-secondary);width:60px;flex-shrink:0}
 .seg{display:flex;gap:4px;flex-wrap:wrap}
 .seg button{height:26px;padding:0 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);cursor:pointer}
 .seg button:hover{border-color:var(--border-strong);color:var(--text-primary)}
 .seg button.on{border-color:var(--border-accent);background:var(--bg-accent);color:var(--text-accent)}
-.seg button:disabled{opacity:0.35;cursor:default}
+.seg button:disabled{opacity:0.3;cursor:default}
 .tbl-wrap{overflow:auto}
 table{width:100%;border-collapse:collapse;min-width:480px}
 th,td{padding:9px 12px;border-bottom:0.5px solid var(--border);text-align:left;font-size:13px;vertical-align:middle}
@@ -190,7 +206,7 @@ th{font-size:12px;color:var(--text-secondary);font-weight:500;background:var(--s
 .muted{color:var(--text-muted)}
 .empty{text-align:center;color:var(--text-muted);padding:24px}
 .side{display:flex;flex-direction:column;gap:12px}
-.classic-controls{display:flex;gap:4px;flex-wrap:wrap;padding:8px 12px;border-bottom:0.5px solid var(--border)}
+.classic-controls{display:flex;gap:4px;flex-wrap:wrap;padding:8px 12px;border-bottom:0.5px solid var(--border);background:var(--surface-1)}
 .classic-controls button{height:24px;padding:0 9px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);cursor:pointer}
 .classic-controls button:hover{border-color:var(--border-strong);color:var(--text-primary)}
 .classic-controls button.on{border-color:var(--border-accent);background:var(--bg-accent);color:var(--text-accent)}
