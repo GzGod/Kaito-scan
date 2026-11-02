@@ -128,16 +128,16 @@ function arenaLeaderboardJob({ mode, vertical, duration }) {
   };
 }
 
-function arenaLanguageJob({ vertical, duration }) {
+function arenaLanguageJob({ vertical, duration, language }) {
   const routeVertical = arenaRouteVertical('voices', vertical);
   return {
-    key: `arena-voices-${vertical}:${duration}:language-en`,
+    key: `arena-voices-${vertical}:${duration}:language-${language}`,
     source: `arena-voices-${vertical}`,
-    dataset: 'language-en',
+    dataset: `language-${language}`,
     duration,
     service: 'arena',
     route: `voices/${routeVertical}/mindshare_language`,
-    params: { language: 'en', duration, limit: ARENA_LEADERBOARD_LIMIT },
+    params: { language, duration, limit: ARENA_LEADERBOARD_LIMIT },
   };
 }
 
@@ -248,7 +248,10 @@ function arenaJobs() {
     ARENA_COMPANY_DURATIONS.map((duration) => arenaLeaderboardJob({ mode: 'companies', vertical, duration }))
   ));
   const languageJobs = ARENA_VERTICALS.flatMap((vertical) => (
-    ARENA_VOICE_DURATIONS.map((duration) => arenaLanguageJob({ vertical, duration }))
+    ARENA_VOICE_DURATIONS.flatMap((duration) => [
+      arenaLanguageJob({ vertical, duration, language: 'en' }),
+      arenaLanguageJob({ vertical, duration, language: 'zh' }),
+    ])
   ));
   const followersJobs = ARENA_VERTICALS.flatMap((vertical) => (
     ARENA_VOICE_DURATIONS.map((duration) => arenaFollowersJob({ vertical, duration }))

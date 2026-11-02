@@ -5,16 +5,16 @@ const ARENA_COMPANY_DURATIONS = DURATIONS;
 const ARENA_VERTICALS = ['stock', 'ai', 'crypto'];
 
 const VIEWS = [
-  { id: 'arena-voices',    label: 'Top Voices',       group: 'Arena', mode: 'arena', sub: 'voices' },
-  { id: 'arena-companies', label: 'Top Companies',    group: 'Arena', mode: 'arena', sub: 'companies' },
-  { id: 'arena-language',  label: 'EN Language rank', group: 'Arena', mode: 'arena-language' },
-  { id: 'arena-sf',        label: 'Smart Followers',  group: 'Arena', mode: 'arena-sf' },
-  { id: 'arena-github',    label: 'GitHub repos',     group: 'Arena', mode: 'arena-github' },
-  { id: 'pre-tge',         label: 'Pre-TGE',          group: 'Classic', dataset: 'heatmap',  source: 'pre-tge' },
-  { id: 'pre-tge-delta',   label: 'Pre-TGE movers',   group: 'Classic', dataset: 'topDelta', source: 'pre-tge' },
-  { id: 'infomarkets',     label: 'Info markets',     group: 'Classic', dataset: 'heatmap',  source: 'infomarkets' },
-  { id: 'exchange',        label: 'Exchange',         group: 'Classic', dataset: 'heatmap',  source: 'exchange' },
-  { id: 'kols',            label: 'KOL leaderboard',  group: 'Classic', dataset: 'kols',     source: 'infomarkets', durations: KOL_DURATIONS },
+  { id: 'arena-voices',    label: 'Top Voices',        group: 'Arena', mode: 'arena', sub: 'voices' },
+  { id: 'arena-companies', label: 'Top Companies',     group: 'Arena', mode: 'arena', sub: 'companies' },
+  { id: 'arena-language',  label: 'By language',       group: 'Arena', mode: 'arena-language' },
+  { id: 'arena-sf',        label: 'SF count rank',     group: 'Arena', mode: 'arena-sf' },
+  { id: 'arena-github',    label: 'GitHub repos',      group: 'Arena', mode: 'arena-github' },
+  { id: 'pre-tge',         label: 'Pre-TGE',           group: 'Classic', dataset: 'heatmap',  source: 'pre-tge' },
+  { id: 'pre-tge-delta',   label: 'Pre-TGE movers',    group: 'Classic', dataset: 'topDelta', source: 'pre-tge' },
+  { id: 'infomarkets',     label: 'Info markets',      group: 'Classic', dataset: 'heatmap',  source: 'infomarkets' },
+  { id: 'exchange',        label: 'Exchange',          group: 'Classic', dataset: 'heatmap',  source: 'exchange' },
+  { id: 'kols',            label: 'KOL leaderboard',   group: 'Classic', dataset: 'kols',     source: 'infomarkets', durations: KOL_DURATIONS },
 ];
 
 function esc(v) {
@@ -105,15 +105,18 @@ function buildPayload(snapshots) {
   for (const vertical of ARENA_VERTICALS) {
     out['arena-language'][vertical] = {};
     for (const duration of ARENA_VOICE_DURATIONS) {
-      out['arena-language'][vertical][duration] = snapshotItems(snapshots, `arena-voices-${vertical}`, duration, 'language-en').slice(0, 100).map((item, i) => ({
-        rank: item?.rank || i + 1,
-        name: item?.name || item?.username || '',
-        username: item?.username || null,
-        avatar: item?.avatar || null,
-        sub: null,
-        mindshare: Number(item?.mindshare || 0),
-        delta: Number(item?.mindshare_delta || 0),
-      }));
+      out['arena-language'][vertical][duration] = {};
+      for (const lang of ['en', 'zh']) {
+        out['arena-language'][vertical][duration][lang] = snapshotItems(snapshots, `arena-voices-${vertical}`, duration, `language-${lang}`).slice(0, 100).map((item, i) => ({
+          rank: item?.rank || i + 1,
+          name: item?.name || item?.username || '',
+          username: item?.username || null,
+          avatar: item?.avatar || null,
+          sub: null,
+          mindshare: Number(item?.mindshare || 0),
+          delta: Number(item?.mindshare_delta || 0),
+        }));
+      }
     }
   }
 
@@ -274,6 +277,11 @@ td{padding:10px 14px;vertical-align:middle}
         <button data-v="crypto" data-control="vertical">Crypto</button>
       </div>
       <div class="seg-div" id="seg-div" style="display:none"></div>
+      <div id="seg-language" class="seg" style="display:none">
+        <button data-v="en" class="on" data-control="language">EN</button>
+        <button data-v="zh" data-control="language">ZH</button>
+      </div>
+      <div class="seg-div" id="seg-lang-div" style="display:none"></div>
       <div id="seg-duration" class="seg"></div>
       <span class="row-count" id="row-count"></span>
     </div>
@@ -294,7 +302,7 @@ const COMPANY_DURATIONS = ${JSON.stringify(ARENA_COMPANY_DURATIONS)};
 const ALL_DURATIONS = ${JSON.stringify(DURATIONS)};
 const updatedAt = ${JSON.stringify(updatedAt)};
 
-const st = { view: 'arena-voices', vertical: 'stock', duration: '7d' };
+const st = { view: 'arena-voices', vertical: 'stock', duration: '7d', language: 'en' };
 
 function fmtPct(v, signed) {
   const n = Number(v || 0);
@@ -326,7 +334,7 @@ function getItems() {
     return ((DATA[st.view] || {})[st.vertical] || {})[st.duration] || [];
   }
   if (view.mode === 'arena-language') {
-    return ((DATA['arena-language'] || {})[st.vertical] || {})[st.duration] || [];
+    return (((DATA['arena-language'] || {})[st.vertical] || {})[st.duration] || {})[st.language] || [];
   }
   if (view.mode === 'arena-sf') {
     return ((DATA['arena-sf'] || {})[st.vertical] || {})[st.duration] || [];
@@ -356,14 +364,21 @@ function render() {
 
   document.getElementById('toolbar-title').textContent = view.label;
 
-  const isArena = view.mode === 'arena';
   const hasVertical = view.mode === 'arena' || view.mode === 'arena-language' || view.mode === 'arena-sf';
+  const hasLanguage = view.mode === 'arena-language';
   const segV = document.getElementById('seg-vertical');
   const segDiv = document.getElementById('seg-div');
+  const segLang = document.getElementById('seg-language');
+  const segLangDiv = document.getElementById('seg-lang-div');
   segV.style.display = hasVertical ? '' : 'none';
   segDiv.style.display = hasVertical ? '' : 'none';
+  segLang.style.display = hasLanguage ? '' : 'none';
+  segLangDiv.style.display = hasLanguage ? '' : 'none';
   if (hasVertical) {
     segV.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === st.vertical));
+  }
+  if (hasLanguage) {
+    segLang.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === st.language));
   }
 
   const durations = getDurations();
@@ -463,6 +478,9 @@ function render() {
 segV_init: {
   document.getElementById('seg-vertical').querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => { st.vertical = b.dataset.v; render(); });
+  });
+  document.getElementById('seg-language').querySelectorAll('button').forEach((b) => {
+    b.addEventListener('click', () => { st.language = b.dataset.v; render(); });
   });
 }
 
