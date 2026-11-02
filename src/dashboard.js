@@ -227,14 +227,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .row-count{margin-left:auto;font-size:11px;color:var(--txt3);font-variant-numeric:tabular-nums}
 
 .content{flex:1;min-height:0;overflow-y:auto}
-table{width:100%;border-collapse:collapse}
-thead th{position:sticky;top:0;z-index:2;background:var(--surface2);border-bottom:1px solid var(--line2);font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface2);border-bottom:1px solid var(--line2);font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px;white-space:nowrap;overflow:hidden}
 thead th.r{text-align:right}
 tbody tr{border-bottom:1px solid var(--line)}
-tbody tr:hover td{background:rgba(0,0,0,0.02)}
-td{padding:6px 12px;vertical-align:middle}
-.td-rank{width:36px;color:var(--txt3);font-size:12px;font-variant-numeric:tabular-nums}
-.td-name{min-width:120px}
+tbody tr:hover td{background:rgba(0,0,0,0.025)}
+td{padding:5px 12px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.td-rank{width:36px;color:var(--txt3);font-size:11px;font-variant-numeric:tabular-nums}
+.td-name{width:auto}
 .name-main{font-size:12px;font-weight:500;color:var(--txt)}
 .name-sub{font-size:11px;color:var(--txt2);margin-top:1px}
 .td-bar{width:160px;padding-right:12px}
@@ -248,25 +248,6 @@ td{padding:6px 12px;vertical-align:middle}
 .delta-chip.dn{background:var(--down-dim);color:var(--down)}
 .delta-chip.flat{color:var(--txt3)}
 .empty-state{display:flex;align-items:center;justify-content:center;height:160px;color:var(--txt3);font-size:12px}
-
-@media(max-width:700px){.nav{display:none}.td-bar{display:none}}
-</style>
-td{padding:10px 14px;vertical-align:middle}
-.td-rank{width:48px;color:var(--txt3);font-size:13px;font-variant-numeric:tabular-nums}
-.td-name{min-width:140px}
-.name-main{font-size:13px;font-weight:500;color:var(--txt)}
-.name-sub{font-size:12px;color:var(--txt2);margin-top:1px}
-.td-bar{width:140px;padding-right:16px}
-.bar-wrap{display:flex;align-items:center;gap:8px}
-.bar-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
-.bar-fill{height:100%;background:var(--accent);border-radius:2px;min-width:1px}
-.bar-val{font-size:12px;color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:48px;text-align:right}
-.td-delta{width:90px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.delta-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:12px}
-.delta-chip.up{background:var(--up-dim);color:var(--up)}
-.delta-chip.dn{background:var(--down-dim);color:var(--down)}
-.delta-chip.flat{color:var(--txt3)}
-.empty-state{display:flex;align-items:center;justify-content:center;height:200px;color:var(--txt3);font-size:13px}
 
 @media(max-width:700px){.nav{display:none}.td-bar{display:none}}
 </style>
