@@ -8,12 +8,9 @@ const ARENA_COMPANY_DURATIONS = SUPPORTED_DURATIONS;
 const DATASET_ROUTES = {
   '/api/pre-tge': { source: 'pre-tge', dataset: 'heatmap', defaultDuration: '24h' },
   '/api/pre-tge/top-delta': { source: 'pre-tge', dataset: 'topDelta', defaultDuration: '24h' },
-  '/api/pre-tge/top-gainer': { source: 'pre-tge', dataset: 'topGainer', defaultDuration: '24h' },
   '/api/infomarkets': { source: 'infomarkets', dataset: 'heatmap', defaultDuration: '24h' },
-  '/api/infomarkets/top-gainer': { source: 'infomarkets', dataset: 'topGainer', defaultDuration: '24h' },
   '/api/infomarkets/kols': { source: 'infomarkets', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS },
   '/api/exchange': { source: 'exchange', dataset: 'heatmap', defaultDuration: '24h' },
-  '/api/exchange/top-gainer': { source: 'exchange', dataset: 'topGainer', defaultDuration: '24h' },
   '/api/arena/voices': {
     sourcePrefix: 'arena-voices',
     dataset: 'leaderboard',

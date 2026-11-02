@@ -9,11 +9,8 @@ const VIEWS = [
   { id: 'arena-companies', label: 'Top Companies',  group: 'Arena', mode: 'arena',   sub: 'companies' },
   { id: 'pre-tge',         label: 'Pre-TGE',        group: 'Classic', dataset: 'heatmap',  source: 'pre-tge' },
   { id: 'pre-tge-delta',   label: 'Pre-TGE movers', group: 'Classic', dataset: 'topDelta', source: 'pre-tge' },
-  { id: 'pre-tge-gainer',  label: 'Pre-TGE gainers',group: 'Classic', dataset: 'topGainer',source: 'pre-tge' },
   { id: 'infomarkets',     label: 'Info markets',   group: 'Classic', dataset: 'heatmap',  source: 'infomarkets' },
-  { id: 'info-gainer',     label: 'Info gainers',   group: 'Classic', dataset: 'topGainer',source: 'infomarkets' },
   { id: 'exchange',        label: 'Exchange',       group: 'Classic', dataset: 'heatmap',  source: 'exchange' },
-  { id: 'exchange-gainer', label: 'Exchange gainers',group:'Classic', dataset: 'topGainer',source: 'exchange' },
   { id: 'kols',            label: 'KOL leaderboard',group: 'Classic', dataset: 'kols',     source: 'infomarkets', durations: KOL_DURATIONS },
 ];
 
@@ -137,12 +134,12 @@ function renderDashboard(store) {
   --down-dim:rgba(240,96,112,0.1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+body{background:var(--bg);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
-.topbar{height:52px;flex-shrink:0;border-bottom:0.5px solid var(--line);display:flex;align-items:center;gap:0;padding:0 20px;justify-content:space-between}
-.logo{font-size:15px;font-weight:500;letter-spacing:.01em;color:var(--txt)}
+.topbar{height:52px;border-bottom:0.5px solid var(--line);display:flex;align-items:center;padding:0 20px;justify-content:space-between;position:sticky;top:0;z-index:10;background:var(--bg)}
+.logo{font-size:15px;font-weight:500;color:var(--txt)}
 .logo span{color:var(--accent)}
 .top-meta{display:flex;align-items:center;gap:16px}
 .top-badge{font-size:12px;color:var(--txt2);background:var(--surface);border:0.5px solid var(--line);border-radius:6px;padding:3px 10px;font-variant-numeric:tabular-nums}
@@ -151,18 +148,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .top-links a{font-size:12px;color:var(--txt2);border:0.5px solid var(--line);border-radius:6px;padding:3px 9px}
 .top-links a:hover{color:var(--txt);border-color:var(--line2)}
 
-.body{flex:1;display:flex;overflow:hidden}
+.body{display:flex;min-height:calc(100vh - 52px)}
 
-.nav{width:200px;flex-shrink:0;border-right:0.5px solid var(--line);overflow-y:auto;padding:12px 0;background:var(--nav)}
+.nav{width:200px;flex-shrink:0;border-right:0.5px solid var(--line);padding:12px 0;background:var(--nav);position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}
 .nav-group{margin-bottom:4px}
 .nav-group-label{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;padding:8px 16px 4px}
 .nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:13px;color:var(--txt2);cursor:pointer;border-left:2px solid transparent}
 .nav-item:hover{color:var(--txt);background:rgba(255,255,255,0.03)}
 .nav-item.active{color:var(--accent);background:var(--accent-dim);border-left-color:var(--accent)}
 
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
 
-.toolbar{height:48px;flex-shrink:0;border-bottom:0.5px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 20px;background:var(--nav)}
+.toolbar{height:48px;border-bottom:0.5px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 20px;background:var(--nav);position:sticky;top:52px;z-index:9}
 .toolbar-title{font-size:15px;font-weight:500;color:var(--txt);margin-right:8px}
 .seg{display:flex;gap:4px;flex-wrap:wrap}
 .seg button{height:28px;padding:0 11px;font-size:12px;border:0.5px solid var(--line);border-radius:6px;color:var(--txt2)}
@@ -172,9 +169,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .seg-div{width:0.5px;height:20px;background:var(--line);margin:0 4px}
 .row-count{margin-left:auto;font-size:12px;color:var(--txt3);font-variant-numeric:tabular-nums}
 
-.content{flex:1;overflow:auto}
+.content{overflow:auto}
 table{width:100%;border-collapse:collapse}
-thead th{position:sticky;top:0;z-index:2;background:var(--surface);border-bottom:0.5px solid var(--line2);font-size:11px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px;white-space:nowrap}
+thead th{position:sticky;top:100px;z-index:2;background:var(--surface);border-bottom:0.5px solid var(--line2);font-size:11px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px;white-space:nowrap}
 thead th.r{text-align:right}
 tbody tr{border-bottom:0.5px solid var(--line)}
 tbody tr:hover td{background:rgba(255,255,255,0.025)}
@@ -189,14 +186,11 @@ td{padding:10px 14px;vertical-align:middle}
 .bar-fill{height:100%;background:var(--accent);border-radius:2px;min-width:1px}
 .bar-val{font-size:12px;color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:48px;text-align:right}
 .td-delta{width:90px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.delta-up{color:var(--up)}
-.delta-dn{color:var(--down)}
-.delta-flat{color:var(--txt3)}
 .delta-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:12px}
 .delta-chip.up{background:var(--up-dim);color:var(--up)}
 .delta-chip.dn{background:var(--down-dim);color:var(--down)}
 .delta-chip.flat{color:var(--txt3)}
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--txt3);font-size:13px;gap:8px}
+.empty-state{display:flex;align-items:center;justify-content:center;height:200px;color:var(--txt3);font-size:13px}
 
 @media(max-width:700px){.nav{display:none}.td-bar{display:none}}
 </style>
