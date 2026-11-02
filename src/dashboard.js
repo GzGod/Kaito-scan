@@ -75,6 +75,8 @@ function buildPayload(snapshots) {
         out[viewId][vertical][duration] = snapshotItems(snapshots, source, duration, 'leaderboard').slice(0, 100).map((item, i) => ({
           rank: item?.rank || i + 1,
           name: itemName(item, 'leaderboard'),
+          username: item?.username || null,
+          avatar: item?.avatar || null,
           sub: itemSubline(item),
           mindshare: itemMindshare(item, 'leaderboard', duration),
           delta: itemDelta(item, duration),
@@ -317,6 +319,7 @@ function render() {
   const maxMs = Math.max(...items.map((it) => Math.abs(Number(it.mindshare || 0))), 0.0001);
   const signed = items[0]?.signed || false;
   const isKol = view.id === 'kols';
+  const hasAvatar = items.some((it) => it.avatar);
 
   document.getElementById('thead').innerHTML =
     '<tr><th style="width:48px">#</th><th>' + (isKol ? 'Account' : 'Name') + '</th>' +
@@ -330,9 +333,14 @@ function render() {
         const barW = Math.round(Math.abs(ms) / maxMs * 100);
         const dClass = d > 0 ? 'up' : d < 0 ? 'dn' : 'flat';
         const arrow = d > 0 ? '↑' : d < 0 ? '↓' : '';
+        const avatarHtml = hasAvatar
+          ? (it.avatar
+              ? '<img src="' + esc(it.avatar) + '" width="24" height="24" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="border-radius:50%;vertical-align:middle;margin-right:8px;flex-shrink:0">'
+              : '<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--surface2);margin-right:8px;flex-shrink:0"></span>')
+          : '';
         return '<tr>' +
           '<td class="td-rank">' + esc(it.rank) + '</td>' +
-          '<td class="td-name"><div class="name-main">' + esc(it.name) + '</div>' + (it.sub ? '<div class="name-sub">' + esc(it.sub) + '</div>' : '') + '</td>' +
+          '<td class="td-name"><div class="name-main" style="display:flex;align-items:center">' + avatarHtml + esc(it.name) + '</div>' + (it.sub ? '<div class="name-sub">' + esc(it.sub) + '</div>' : '') + '</td>' +
           '<td class="td-bar"><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:' + barW + '%"></div></div><span class="bar-val">' + fmtPct(ms, signed) + '</span></div></td>' +
           '<td class="td-delta"><span class="delta-chip ' + dClass + '">' + arrow + ' ' + fmtPct(d, true) + '</span></td>' +
           '</tr>';
