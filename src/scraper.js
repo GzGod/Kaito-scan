@@ -166,6 +166,19 @@ function arenaGithubJob({ duration }) {
   };
 }
 
+function arenaDeltaAllJob({ vertical }) {
+  const routeVertical = arenaRouteVertical('voices', vertical);
+  return {
+    key: `arena-voices-${vertical}:delta-all`,
+    source: `arena-voices-${vertical}`,
+    dataset: 'delta-all',
+    duration: 'all',
+    service: 'arena',
+    route: `voices/${routeVertical}/mindshare_delta_all`,
+    params: { sector: 'ALL', limit: 100 },
+  };
+}
+
 function tickerJobs() {
   return DURATIONS.flatMap((duration) => [
     tickerMindshareJob({
@@ -257,7 +270,8 @@ function arenaJobs() {
     ARENA_VOICE_DURATIONS.map((duration) => arenaFollowersJob({ vertical, duration }))
   ));
   const githubJobs = ARENA_VOICE_DURATIONS.map((duration) => arenaGithubJob({ duration }));
-  return [...voiceJobs, ...companyJobs, ...languageJobs, ...followersJobs, ...githubJobs];
+  const deltaAllJobs = ARENA_VERTICALS.map((vertical) => arenaDeltaAllJob({ vertical }));
+  return [...voiceJobs, ...companyJobs, ...languageJobs, ...followersJobs, ...githubJobs, ...deltaAllJobs];
 }
 
 function buildJobs() {
