@@ -228,6 +228,23 @@ function createRequestHandler({ apiKey }) {
 
     if (DATASET_ROUTES[url.pathname]) return sendDatasetSnapshot(req, url, res, DATASET_ROUTES[url.pathname]);
 
+    if (url.pathname === '/api/proxy/mindshare-line') {
+      const userIds = url.searchParams.get('user_ids') || '';
+      const duration = url.searchParams.get('duration') || '7d';
+      const vertical = url.searchParams.get('vertical') || 'trading';
+      if (!userIds) return sendJson(res, 400, { error: 'user_ids required' });
+      try {
+        const { fetchProtectedJson } = require('./scraper');
+        const routeV = vertical === 'stock' ? 'trading' : vertical === 'companies-stock' ? 'equity' : vertical;
+        const data = await fetchProtectedJson(`voices/${routeV}/batch_mindshare_line`, { user_ids: userIds, duration }, 'proxy-line', 'arena');
+        res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=60' });
+        res.end(JSON.stringify(data));
+      } catch (err) {
+        return sendJson(res, 502, { error: String(err.message) });
+      }
+      return;
+    }
+
     if (url.pathname === '/api/admin/update' && req.method === 'POST') {
       const result = await runUpdate('manual-api');
       return sendJson(res, result.ok ? 200 : 500, result);

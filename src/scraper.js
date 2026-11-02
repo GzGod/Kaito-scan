@@ -502,6 +502,7 @@ module.exports = {
   JOBS,
   arenaRouteVertical,
   buildJobs,
+  fetchProtectedJson,
   getMetrics,
   normalizeItems,
   scrapeLive,
