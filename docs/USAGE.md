@@ -41,8 +41,11 @@ For every supported duration, the service collects ticker snapshots:
 ```text
 pre-tge:<duration>:heatmap
 pre-tge:<duration>:topDelta
+pre-tge:<duration>:topGainer
 infomarkets:<duration>:heatmap
+infomarkets:<duration>:topGainer
 exchange:<duration>:heatmap
+exchange:<duration>:topGainer
 
 Info KOL snapshots are collected for 7d, 30d, 3m, 6m, and 12m only:
 
@@ -63,7 +66,7 @@ arena-companies-crypto:<duration>:leaderboard
 Top Voices supports `7d`, `30d`, `3m`, `6m`, and `12m`.
 Top Companies supports `24h`, `7d`, `30d`, `3m`, `6m`, and `12m`.
 
-That is `62` snapshots per update.
+That is `80` snapshots per update.
 
 Not available yet:
 

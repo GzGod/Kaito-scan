@@ -36,15 +36,18 @@ For every duration, the worker collects:
 ```text
 pre-tge:<duration>:heatmap
 pre-tge:<duration>:topDelta
+pre-tge:<duration>:topGainer
 infomarkets:<duration>:heatmap
+infomarkets:<duration>:topGainer
 exchange:<duration>:heatmap
+exchange:<duration>:topGainer
 
 Info KOL snapshots are collected for 7d, 30d, 3m, 6m, and 12m only:
 
 infomarkets:<duration>:kols
 ```
 
-That is `29` cached snapshots per update.
+That is `80` cached snapshots per update.
 
 ## Auth
 
@@ -62,9 +65,12 @@ The dashboard `/` is public.
 - `GET /api/live`
 - `GET /api/pre-tge?duration=7d&limit=50`
 - `GET /api/pre-tge/top-delta?duration=30d&limit=50`
+- `GET /api/pre-tge/top-gainer?duration=24h&limit=50`
 - `GET /api/infomarkets?duration=3m&limit=50`
+- `GET /api/infomarkets/top-gainer?duration=24h&limit=50`
 - `GET /api/infomarkets/kols?duration=12m&limit=100`
 - `GET /api/exchange?duration=30d&limit=50`
+- `GET /api/exchange/top-gainer?duration=24h&limit=50`
 - `GET /api/snapshot/:key?limit=50`
 - `POST /api/admin/update`
 
