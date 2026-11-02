@@ -128,6 +128,44 @@ function arenaLeaderboardJob({ mode, vertical, duration }) {
   };
 }
 
+function arenaLanguageJob({ vertical, duration }) {
+  const routeVertical = arenaRouteVertical('voices', vertical);
+  return {
+    key: `arena-voices-${vertical}:${duration}:language-en`,
+    source: `arena-voices-${vertical}`,
+    dataset: 'language-en',
+    duration,
+    service: 'arena',
+    route: `voices/${routeVertical}/mindshare_language`,
+    params: { language: 'en', duration, limit: ARENA_LEADERBOARD_LIMIT },
+  };
+}
+
+function arenaFollowersJob({ vertical, duration }) {
+  const routeVertical = arenaRouteVertical('voices', vertical);
+  return {
+    key: `arena-voices-${vertical}:${duration}:smart-followers`,
+    source: `arena-voices-${vertical}`,
+    dataset: 'smart-followers',
+    duration,
+    service: 'arena',
+    route: `voices/${routeVertical}/followers_change`,
+    params: { type: 'sf', duration, limit: ARENA_LEADERBOARD_LIMIT },
+  };
+}
+
+function arenaGithubJob({ duration }) {
+  return {
+    key: `arena-voices-ai:${duration}:github-repos`,
+    source: 'arena-voices-ai',
+    dataset: 'github-repos',
+    duration,
+    service: 'arena',
+    route: 'voices/ai/github_repos',
+    params: { duration, limit: 50 },
+  };
+}
+
 function tickerJobs() {
   return DURATIONS.flatMap((duration) => [
     tickerMindshareJob({
@@ -209,7 +247,14 @@ function arenaJobs() {
   const companyJobs = ARENA_VERTICALS.flatMap((vertical) => (
     ARENA_COMPANY_DURATIONS.map((duration) => arenaLeaderboardJob({ mode: 'companies', vertical, duration }))
   ));
-  return [...voiceJobs, ...companyJobs];
+  const languageJobs = ARENA_VERTICALS.flatMap((vertical) => (
+    ARENA_VOICE_DURATIONS.map((duration) => arenaLanguageJob({ vertical, duration }))
+  ));
+  const followersJobs = ARENA_VERTICALS.flatMap((vertical) => (
+    ARENA_VOICE_DURATIONS.map((duration) => arenaFollowersJob({ vertical, duration }))
+  ));
+  const githubJobs = ARENA_VOICE_DURATIONS.map((duration) => arenaGithubJob({ duration }));
+  return [...voiceJobs, ...companyJobs, ...languageJobs, ...followersJobs, ...githubJobs];
 }
 
 function buildJobs() {

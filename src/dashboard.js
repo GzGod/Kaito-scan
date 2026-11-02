@@ -5,13 +5,16 @@ const ARENA_COMPANY_DURATIONS = DURATIONS;
 const ARENA_VERTICALS = ['stock', 'ai', 'crypto'];
 
 const VIEWS = [
-  { id: 'arena-voices',    label: 'Top Voices',     group: 'Arena', mode: 'arena',   sub: 'voices' },
-  { id: 'arena-companies', label: 'Top Companies',  group: 'Arena', mode: 'arena',   sub: 'companies' },
-  { id: 'pre-tge',         label: 'Pre-TGE',        group: 'Classic', dataset: 'heatmap',  source: 'pre-tge' },
-  { id: 'pre-tge-delta',   label: 'Pre-TGE movers', group: 'Classic', dataset: 'topDelta', source: 'pre-tge' },
-  { id: 'infomarkets',     label: 'Info markets',   group: 'Classic', dataset: 'heatmap',  source: 'infomarkets' },
-  { id: 'exchange',        label: 'Exchange',       group: 'Classic', dataset: 'heatmap',  source: 'exchange' },
-  { id: 'kols',            label: 'KOL leaderboard',group: 'Classic', dataset: 'kols',     source: 'infomarkets', durations: KOL_DURATIONS },
+  { id: 'arena-voices',    label: 'Top Voices',       group: 'Arena', mode: 'arena', sub: 'voices' },
+  { id: 'arena-companies', label: 'Top Companies',    group: 'Arena', mode: 'arena', sub: 'companies' },
+  { id: 'arena-language',  label: 'EN Language rank', group: 'Arena', mode: 'arena-language' },
+  { id: 'arena-sf',        label: 'Smart Followers',  group: 'Arena', mode: 'arena-sf' },
+  { id: 'arena-github',    label: 'GitHub repos',     group: 'Arena', mode: 'arena-github' },
+  { id: 'pre-tge',         label: 'Pre-TGE',          group: 'Classic', dataset: 'heatmap',  source: 'pre-tge' },
+  { id: 'pre-tge-delta',   label: 'Pre-TGE movers',   group: 'Classic', dataset: 'topDelta', source: 'pre-tge' },
+  { id: 'infomarkets',     label: 'Info markets',     group: 'Classic', dataset: 'heatmap',  source: 'infomarkets' },
+  { id: 'exchange',        label: 'Exchange',         group: 'Classic', dataset: 'heatmap',  source: 'exchange' },
+  { id: 'kols',            label: 'KOL leaderboard',  group: 'Classic', dataset: 'kols',     source: 'infomarkets', durations: KOL_DURATIONS },
 ];
 
 function esc(v) {
@@ -82,7 +85,7 @@ function buildPayload(snapshots) {
     }
   }
 
-  for (const view of VIEWS.filter((v) => v.mode !== 'arena')) {
+  for (const view of VIEWS.filter((v) => v.mode !== 'arena' && v.mode !== 'arena-language' && v.mode !== 'arena-sf' && v.mode !== 'arena-github')) {
     const durations = view.durations || DURATIONS;
     out[view.id] = {};
     for (const duration of durations) {
@@ -95,6 +98,57 @@ function buildPayload(snapshots) {
         signed: view.dataset === 'topDelta' || view.dataset === 'topGainer',
       }));
     }
+  }
+
+  // Language EN leaderboard (per vertical, voice durations)
+  out['arena-language'] = {};
+  for (const vertical of ARENA_VERTICALS) {
+    out['arena-language'][vertical] = {};
+    for (const duration of ARENA_VOICE_DURATIONS) {
+      out['arena-language'][vertical][duration] = snapshotItems(snapshots, `arena-voices-${vertical}`, duration, 'language-en').slice(0, 100).map((item, i) => ({
+        rank: item?.rank || i + 1,
+        name: item?.name || item?.username || '',
+        username: item?.username || null,
+        avatar: item?.avatar || null,
+        sub: null,
+        mindshare: Number(item?.mindshare || 0),
+        delta: Number(item?.mindshare_delta || 0),
+      }));
+    }
+  }
+
+  // Smart Followers change (per vertical, voice durations)
+  out['arena-sf'] = {};
+  for (const vertical of ARENA_VERTICALS) {
+    out['arena-sf'][vertical] = {};
+    for (const duration of ARENA_VOICE_DURATIONS) {
+      out['arena-sf'][vertical][duration] = snapshotItems(snapshots, `arena-voices-${vertical}`, duration, 'smart-followers').slice(0, 100).map((item, i) => ({
+        rank: item?.rank || i + 1,
+        name: item?.name || item?.username || '',
+        username: item?.username || null,
+        avatar: item?.avatar || null,
+        sub: null,
+        count: Number(item?.count || 0),
+        change: Number(item?.change || 0),
+        isSF: true,
+      }));
+    }
+  }
+
+  // GitHub repos (AI only, voice durations)
+  out['arena-github'] = {};
+  for (const duration of ARENA_VOICE_DURATIONS) {
+    out['arena-github'][duration] = snapshotItems(snapshots, 'arena-voices-ai', duration, 'github-repos').slice(0, 50).map((item, i) => ({
+      rank: item?.repo_rank || i + 1,
+      name: item?.repo || '',
+      sub: item?.repo_description || null,
+      url: item?.repo_url || null,
+      score: Number(item?.score || 0),
+      stars: Number(item?.star_count || 0),
+      forks: Number(item?.fork_count || 0),
+      mentions: Number(item?.mention_count || 0),
+      isGithub: true,
+    }));
   }
 
   return out;
@@ -270,6 +324,15 @@ function getItems() {
   if (view.mode === 'arena') {
     return ((DATA[st.view] || {})[st.vertical] || {})[st.duration] || [];
   }
+  if (view.mode === 'arena-language') {
+    return ((DATA['arena-language'] || {})[st.vertical] || {})[st.duration] || [];
+  }
+  if (view.mode === 'arena-sf') {
+    return ((DATA['arena-sf'] || {})[st.vertical] || {})[st.duration] || [];
+  }
+  if (view.mode === 'arena-github') {
+    return (DATA['arena-github'] || {})[st.duration] || [];
+  }
   return (DATA[st.view] || {})[st.duration] || [];
 }
 
@@ -277,6 +340,8 @@ function getDurations() {
   const view = VIEWS.find((v) => v.id === st.view);
   if (!view) return DURATIONS;
   if (view.mode === 'arena') return st.view === 'arena-voices' ? VOICE_DURATIONS : COMPANY_DURATIONS;
+  if (view.mode === 'arena-language' || view.mode === 'arena-sf') return VOICE_DURATIONS;
+  if (view.mode === 'arena-github') return VOICE_DURATIONS;
   return view.durations || ${JSON.stringify(DURATIONS)};
 }
 
@@ -291,11 +356,12 @@ function render() {
   document.getElementById('toolbar-title').textContent = view.label;
 
   const isArena = view.mode === 'arena';
+  const hasVertical = view.mode === 'arena' || view.mode === 'arena-language' || view.mode === 'arena-sf';
   const segV = document.getElementById('seg-vertical');
   const segDiv = document.getElementById('seg-div');
-  segV.style.display = isArena ? '' : 'none';
-  segDiv.style.display = isArena ? '' : 'none';
-  if (isArena) {
+  segV.style.display = hasVertical ? '' : 'none';
+  segDiv.style.display = hasVertical ? '' : 'none';
+  if (hasVertical) {
     segV.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === st.vertical));
   }
 
@@ -310,6 +376,55 @@ function render() {
   });
 
   const items = getItems();
+
+  // GitHub repos view
+  if (view.mode === 'arena-github') {
+    const maxScore = Math.max(...items.map((it) => Number(it.score || 0)), 0.0001);
+    document.getElementById('thead').innerHTML =
+      '<tr><th style="width:48px">#</th><th>Repo</th><th>Score</th><th class="r" style="width:120px">Stars / Forks</th></tr>';
+    document.getElementById('tbody').innerHTML = items.length
+      ? items.map((it) => {
+          const barW = Math.round(Number(it.score || 0) / maxScore * 100);
+          return '<tr>' +
+            '<td class="td-rank">' + esc(it.rank) + '</td>' +
+            '<td class="td-name"><div class="name-main">' + (it.url ? '<a href="' + esc(it.url) + '" target="_blank" style="color:var(--accent)">' + esc(it.name) + '</a>' : esc(it.name)) + '</div>' + (it.sub ? '<div class="name-sub">' + esc(it.sub) + '</div>' : '') + '</td>' +
+            '<td class="td-bar"><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:' + barW + '%"></div></div><span class="bar-val">' + esc(it.score.toFixed(1)) + '</span></div></td>' +
+            '<td class="td-delta" style="color:var(--txt2)">★ ' + esc(it.stars.toLocaleString()) + ' · ' + esc(it.forks.toLocaleString()) + '</td>' +
+            '</tr>';
+        }).join('')
+      : '<tr><td colspan="4"><div class="empty-state">No cached data — next update at :05</div></td></tr>';
+    document.getElementById('row-count').textContent = items.length + ' repos';
+    return;
+  }
+
+  // Smart Followers view
+  if (view.mode === 'arena-sf') {
+    const maxCount = Math.max(...items.map((it) => Number(it.count || 0)), 1);
+    const hasAvatar = items.some((it) => it.avatar);
+    document.getElementById('thead').innerHTML =
+      '<tr><th style="width:48px">#</th><th>Account</th><th>Smart followers</th><th class="r" style="width:110px">Change</th></tr>';
+    document.getElementById('tbody').innerHTML = items.length
+      ? items.map((it) => {
+          const barW = Math.round(Number(it.count || 0) / maxCount * 100);
+          const ch = Number(it.change || 0);
+          const dClass = ch > 0 ? 'up' : ch < 0 ? 'dn' : 'flat';
+          const arrow = ch > 0 ? '↑' : ch < 0 ? '↓' : '';
+          const avatarHtml = hasAvatar
+            ? (it.avatar ? '<img src="' + esc(it.avatar) + '" width="24" height="24" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="border-radius:50%;vertical-align:middle;margin-right:8px;flex-shrink:0">' : '<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--surface2);margin-right:8px;flex-shrink:0"></span>')
+            : '';
+          return '<tr>' +
+            '<td class="td-rank">' + esc(it.rank) + '</td>' +
+            '<td class="td-name"><div class="name-main" style="display:flex;align-items:center">' + avatarHtml + esc(it.name) + '</div></td>' +
+            '<td class="td-bar"><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:' + barW + '%"></div></div><span class="bar-val">' + esc(Number(it.count).toLocaleString()) + '</span></div></td>' +
+            '<td class="td-delta"><span class="delta-chip ' + dClass + '">' + arrow + ' ' + esc((ch > 0 ? '+' : '') + ch.toLocaleString()) + '</span></td>' +
+            '</tr>';
+        }).join('')
+      : '<tr><td colspan="4"><div class="empty-state">No cached data — next update at :05</div></td></tr>';
+    document.getElementById('row-count').textContent = items.length + ' rows';
+    return;
+  }
+
+  // Default: mindshare views (leaderboard, language, classic)
   const maxMs = Math.max(...items.map((it) => Math.abs(Number(it.mindshare || 0))), 0.0001);
   const signed = items[0]?.signed || false;
   const isKol = view.id === 'kols';
