@@ -291,6 +291,7 @@ const DATA = ${payloadJson};
 const VIEWS = ${viewsJson};
 const VOICE_DURATIONS = ${JSON.stringify(ARENA_VOICE_DURATIONS)};
 const COMPANY_DURATIONS = ${JSON.stringify(ARENA_COMPANY_DURATIONS)};
+const ALL_DURATIONS = ${JSON.stringify(DURATIONS)};
 const updatedAt = ${JSON.stringify(updatedAt)};
 
 const st = { view: 'arena-voices', vertical: 'stock', duration: '7d' };
@@ -338,11 +339,11 @@ function getItems() {
 
 function getDurations() {
   const view = VIEWS.find((v) => v.id === st.view);
-  if (!view) return DURATIONS;
+  if (!view) return ALL_DURATIONS;
   if (view.mode === 'arena') return st.view === 'arena-voices' ? VOICE_DURATIONS : COMPANY_DURATIONS;
   if (view.mode === 'arena-language' || view.mode === 'arena-sf') return VOICE_DURATIONS;
   if (view.mode === 'arena-github') return VOICE_DURATIONS;
-  return view.durations || ${JSON.stringify(DURATIONS)};
+  return view.durations || ALL_DURATIONS;
 }
 
 function render() {
