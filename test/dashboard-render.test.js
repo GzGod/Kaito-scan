@@ -72,7 +72,7 @@ test('dashboard groups arena data by type, vertical, and duration without render
   assert.match(html, /crypto_voice/);
   assert.match(html, /const VOICE_DURATIONS = \["7d","30d","3m","6m","12m"\]/);
   assert.match(html, /const COMPANY_DURATIONS = \["24h","7d","30d","3m","6m","12m"\]/);
-  assert.doesNotMatch(html, /<img\b/i);
+  assert.match(html, /unavatar\.io\/x\//);
   assert.doesNotMatch(html, /logo\.png/);
 });
 

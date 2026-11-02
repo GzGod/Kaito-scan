@@ -104,6 +104,7 @@ function arenaPayload(snapshots) {
         payload[mode][vertical][duration] = snapshotItems(snapshots, source, duration, 'leaderboard').slice(0, 100).map((item, index) => ({
           rank: item?.rank || index + 1,
           name: itemName(item, 'leaderboard'),
+          username: item?.username || null,
           subline: itemSubline(item),
           mindshare: itemMindshare(item, 'leaderboard', duration),
           delta: itemDelta(item, duration),
@@ -124,6 +125,7 @@ function classicPayload(snapshots) {
       payload[key].rows[duration] = snapshotItems(snapshots, entry.source, duration, entry.dataset).slice(0, 50).map((item, index) => ({
         rank: item?.rank || item?.snapshot_rank || index + 1,
         name: itemName(item, entry.dataset),
+        username: entry.dataset === 'kols' ? (item?.username || null) : null,
         subline: itemSubline(item),
         value: itemMindshare(item, entry.dataset, duration),
         delta: itemDelta(item, duration),
@@ -317,9 +319,11 @@ const st={mode:'voices',vertical:'stock',duration:'7d'};
 const lbl={voices:'Top Voices',companies:'Top Companies',stock:'Stock',ai:'AI',crypto:'Crypto'};
 function esc(v){return String(v??'').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function fmtPct(v,signed){const n=Number(v||0);const s=signed&&n>0?'+':'';return s+(n*100).toFixed(2)+'%';}
-function rowHtml(rank,name,sub,val,delta,signed){
+function rowHtml(rank,name,sub,val,delta,signed,username){
   const dc=delta>0?'pos':delta<0?'neg':'muted';
-  return '<tr><td class="col-rank muted">'+esc(rank)+'</td><td><div class="row-name">'+esc(name)+'</div>'+(sub?'<div class="row-sub">'+esc(sub)+'</div>':'')+'</td><td class="col-num">'+fmtPct(val,signed)+'</td><td class="col-num '+dc+'">'+fmtPct(delta,true)+'</td></tr>';
+  const uname=username?String(username).replace(/^@/,''):'';
+  const avatar=uname?'<img src="https://unavatar.io/x/'+esc(uname)+'" width="24" height="24" loading="lazy" onerror="this.style.display=\'none\'" style="border-radius:50%;vertical-align:middle;margin-right:7px;flex-shrink:0"> ':'';
+  return '<tr><td class="col-rank muted">'+esc(rank)+'</td><td><div class="row-name" style="display:flex;align-items:center">'+avatar+esc(name)+'</div>'+(sub?'<div class="row-sub">'+esc(sub)+'</div>':'')+'</td><td class="col-num">'+fmtPct(val,signed)+'</td><td class="col-num '+dc+'">'+fmtPct(delta,true)+'</td></tr>';
 }
 function renderArena(){
   const allowed=st.mode==='voices'?VOICE_DURATIONS:COMPANY_DURATIONS;
@@ -335,7 +339,7 @@ function renderArena(){
   const items=(((AD[st.mode]||{})[st.vertical]||{})[st.duration]||[]);
   document.getElementById('arena-title').textContent=lbl[st.mode]+' · '+lbl[st.vertical]+' · '+st.duration;
   document.getElementById('arena-count').textContent=items.length+' items';
-  document.getElementById('arena-body').innerHTML=items.slice(0,50).map((it)=>rowHtml(it.rank,it.name,it.subline,it.mindshare,it.delta,false)).join('')||'<tr><td colspan="4" class="empty">No data yet</td></tr>';
+  document.getElementById('arena-body').innerHTML=items.slice(0,50).map((it)=>rowHtml(it.rank,it.name,it.subline,it.mindshare,it.delta,false,it.username)).join('')||'<tr><td colspan="4" class="empty">No data yet</td></tr>';
 }
 function renderClassic(key,dur){
   const block=CD[key];
@@ -347,7 +351,7 @@ function renderClassic(key,dur){
   document.querySelectorAll('[data-classic-control="'+key+'"] button').forEach((b)=>{b.className=b.dataset.duration===dur?'on':'';});
   if(!body)return;
   const signed=block.dataset==='topDelta'||block.dataset==='topGainer';
-  body.innerHTML=items.slice(0,12).map((it)=>rowHtml(it.rank,it.name,it.subline,it.value,it.delta,signed)).join('')||'<tr><td colspan="4" class="empty">No data yet</td></tr>';
+  body.innerHTML=items.slice(0,12).map((it)=>rowHtml(it.rank,it.name,it.subline,it.value,it.delta,signed,it.username)).join('')||'<tr><td colspan="4" class="empty">No data yet</td></tr>';
 }
 document.querySelectorAll('[data-control] button').forEach((b)=>{
   b.addEventListener('click',()=>{
