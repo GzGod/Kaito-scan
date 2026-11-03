@@ -227,6 +227,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .workspace{flex:1;display:flex;overflow:hidden;min-height:0}
 .pane-left{flex:1;min-width:0;overflow:hidden;border-right:1px solid var(--line);position:relative}
 .pane-right{width:420px;flex-shrink:0;overflow-y:auto}
+.treemap-wrap{position:absolute;inset:0;padding:6px}
 table{width:100%;border-collapse:collapse}
 thead th{position:sticky;top:0;z-index:2;background:var(--surface2);border-bottom:1px solid var(--line2);font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:5px 10px;white-space:nowrap}
 thead th.r{text-align:right}
@@ -339,7 +340,7 @@ function getDurations(){
 }
 
 function treemap(items,container){
-  const W=container.clientWidth||600,H=container.clientHeight||400;
+  const W=container.parentElement.clientWidth||600,H=container.parentElement.clientHeight||400;
   const top=items.slice(0,30);
   const total=top.reduce((s,it)=>s+Math.abs(Number(it.mindshare||0)),0)||1;
   top.forEach((it)=>{it._a=Math.abs(Number(it.mindshare||0))/total*W*H;});
