@@ -225,7 +225,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .filter-sep{width:1px;height:14px;background:var(--line2);margin:0 2px}
 .row-count{margin-left:auto;font-size:11px;color:var(--txt3);font-variant-numeric:tabular-nums}
 .workspace{flex:1;display:flex;overflow:hidden;min-height:0}
-.pane-left{flex:1;min-width:0;overflow-y:auto;border-right:1px solid var(--line)}
+.pane-left{flex:1;min-width:0;overflow:hidden;border-right:1px solid var(--line);position:relative}
 .pane-right{width:420px;flex-shrink:0;overflow-y:auto}
 table{width:100%;border-collapse:collapse}
 thead th{position:sticky;top:0;z-index:2;background:var(--surface2);border-bottom:1px solid var(--line2);font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:5px 10px;white-space:nowrap}
@@ -505,8 +505,10 @@ function render(){
     pR.style.display='';
     const tw=document.createElement('div');tw.className='treemap-wrap';
     pL.innerHTML='';pL.appendChild(tw);
-    treemap(items,tw);
-    fetchSparklines(items,st.vertical);
+    requestAnimationFrame(()=>{
+      treemap(items,tw);
+      fetchSparklines(items,st.vertical);
+    });
     renderDeltaRight((DATA['arena-delta-all']||{})[st.vertical]||[],st.deltaCol);
   } else {
     pR.style.display='none';
