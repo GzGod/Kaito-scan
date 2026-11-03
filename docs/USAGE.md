@@ -1,231 +1,279 @@
-# Kaito Scan Usage
+# Kaito Scan — API 使用文档
 
-Kaito Scan keeps cached Kaito mindshare snapshots and serves them through your own API.
+Kaito Scan 每小时从 Kaito 抓取 mindshare 快照并缓存，通过 REST API 对外提供。
 
 ## Base URL
 
-Production:
+```
+https://kaito-scan-production-0895.up.railway.app
+```
 
-https://kaito-scan-production.up.railway.app
+## 认证
 
-## Authentication
+所有 `/api/*` 路由均需要在 Header 中传入 API Key：
 
-All `/api/*` routes require an Authorization header:
-
-```text
+```
 Authorization: Bearer YOUR_API_KEY
 ```
 
-The dashboard `/` is public.
+Dashboard 首页 `/` 不需要认证，公开访问。
 
-## Update Schedule
+## 更新频率
 
-- The worker updates every hour at minute `05`.
-- Examples: `08:05`, `09:05`, `10:05`.
-- API requests read cached snapshots only.
-- API requests do not trigger Kaito requests.
-- Default scrape concurrency is `5`.
+- 每小时 `:05` 分自动抓取一次（如 08:05、09:05）
+- 手动触发：`POST /api/admin/update`
+- API 请求只读缓存，不会触发 Kaito 实时请求
 
-## Supported Durations
+---
 
-The service collects each dataset for these durations:
+## 快照总览
 
-```text
-24h, 7d, 30d, 3m, 6m, 12m
+当前共 **115 个快照**，每次更新全部刷新。
+
+### Classic 数据集（Tickers）
+
+支持时间段：`24h` `7d` `30d` `3m` `6m` `12m`
+
+| 端点路径 | 快照 key 格式 |
+|---|---|
+| `GET /api/pre-tge` | `pre-tge:<duration>:heatmap` |
+| `GET /api/pre-tge/top-delta` | `pre-tge:<duration>:topDelta` |
+| `GET /api/infomarkets` | `infomarkets:<duration>:heatmap` |
+| `GET /api/exchange` | `exchange:<duration>:heatmap` |
+
+KOL 榜只支持 `7d` `30d` `3m` `6m` `12m`（不含 24h）：
+
+| 端点路径 | 快照 key 格式 |
+|---|---|
+| `GET /api/infomarkets/kols` | `infomarkets:<duration>:kols` |
+
+### Arena 数据集
+
+**Top Voices**（支持 `7d` `30d` `3m` `6m` `12m`）：
+
+| vertical 参数 | 快照 key 格式 |
+|---|---|
+| `stock` | `arena-voices-stock:<duration>:leaderboard` |
+| `ai` | `arena-voices-ai:<duration>:leaderboard` |
+| `crypto` | `arena-voices-crypto:<duration>:leaderboard` |
+
+**Top Companies**（支持 `24h` `7d` `30d` `3m` `6m` `12m`）：
+
+| vertical 参数 | 快照 key 格式 |
+|---|---|
+| `stock` | `arena-companies-stock:<duration>:leaderboard` |
+| `ai` | `arena-companies-ai:<duration>:leaderboard` |
+| `crypto` | `arena-companies-crypto:<duration>:leaderboard` |
+
+**Language Region**（EN/ZH，支持 `7d` `30d` `3m` `6m` `12m`）：
+
+```
+arena-voices-stock:<duration>:language-en
+arena-voices-stock:<duration>:language-zh
+arena-voices-ai:<duration>:language-en
+arena-voices-ai:<duration>:language-zh
+arena-voices-crypto:<duration>:language-en
+arena-voices-crypto:<duration>:language-zh
 ```
 
-## Current Datasets
+**Smart Followers**（支持 `7d` `30d` `3m` `6m` `12m`）：
 
-For every supported duration, the service collects ticker snapshots:
-
-```text
-pre-tge:<duration>:heatmap
-pre-tge:<duration>:topDelta
-pre-tge:<duration>:topGainer
-infomarkets:<duration>:heatmap
-infomarkets:<duration>:topGainer
-exchange:<duration>:heatmap
-exchange:<duration>:topGainer
-
-Info KOL snapshots are collected for 7d, 30d, 3m, 6m, and 12m only:
-
-infomarkets:<duration>:kols
+```
+arena-voices-stock:<duration>:smart-followers
+arena-voices-ai:<duration>:smart-followers
+arena-voices-crypto:<duration>:smart-followers
 ```
 
-New Arena snapshots:
+**Top Gainer（多时间段 delta）**：
 
-```text
-arena-voices-stock:<duration>:leaderboard
-arena-voices-ai:<duration>:leaderboard
-arena-voices-crypto:<duration>:leaderboard
-arena-companies-stock:<duration>:leaderboard
-arena-companies-ai:<duration>:leaderboard
-arena-companies-crypto:<duration>:leaderboard
+```
+arena-voices-stock:all:delta-all
+arena-voices-ai:all:delta-all
+arena-voices-crypto:all:delta-all
 ```
 
-Top Voices supports `7d`, `30d`, `3m`, `6m`, and `12m`.
-Top Companies supports `24h`, `7d`, `30d`, `3m`, `6m`, and `12m`.
+**GitHub Repos（AI 专属，支持 `7d` `30d` `3m` `6m` `12m`）**：
 
-That is `80` snapshots per update.
-
-Not available yet:
-
-```text
-ct-leaderboard
-vcarena
+```
+arena-voices-ai:<duration>:github-repos
 ```
 
-## API Endpoints
+---
 
-### Status
+## API 端点
 
-```text
+### 服务状态
+
+```
 GET /api/status
 ```
 
-Returns update status, next scheduled update time, last run info, errors, and available snapshot keys.
+返回更新状态、下次计划时间、上次运行信息、错误、所有快照 key 列表。
 
 ```bash
-curl https://kaito-scan-production.up.railway.app/api/status \
+curl https://kaito-scan-production-0895.up.railway.app/api/status \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### All Live Data
+### 所有当前快照
 
-```text
+```
 GET /api/live
 ```
 
-Returns all current snapshots.
+返回全部快照的完整数据。
 
 ```bash
-curl https://kaito-scan-production.up.railway.app/api/live \
+curl https://kaito-scan-production-0895.up.railway.app/api/live \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### pre-tge Heatmap
+### 所有快照 key 列表
 
-```text
+```
+GET /api/catalog
+```
+
+返回所有快照的 key、数量、最后更新时间。
+
+```bash
+curl https://kaito-scan-production-0895.up.railway.app/api/catalog \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Pre-TGE Heatmap
+
+```
 GET /api/pre-tge?duration=24h&limit=50
 ```
 
-`duration` can be `24h`, `7d`, `30d`, `3m`, `6m`, or `12m`. Default is `24h`.
-
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/pre-tge?duration=7d&limit=50" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/pre-tge?duration=7d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### pre-tge Top Delta
+### Pre-TGE Top Delta
 
-```text
+```
 GET /api/pre-tge/top-delta?duration=24h&limit=50
 ```
 
-Default duration is `24h`.
-
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/pre-tge/top-delta?duration=30d&limit=50" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/pre-tge/top-delta?duration=30d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### infomarkets Heatmap
+### Info Markets Heatmap
 
-```text
+```
 GET /api/infomarkets?duration=24h&limit=50
 ```
 
-Default duration is `24h`.
-
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/infomarkets?duration=3m&limit=50" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/infomarkets?duration=3m&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### infomarkets KOL Leaderboard
+### Info KOL Leaderboard
 
-```text
+```
 GET /api/infomarkets/kols?duration=7d&limit=50
 ```
 
-Default duration is `7d`. KOL supports `7d`, `30d`, `3m`, `6m`, and `12m`; Kaito currently rejects `24h` for this endpoint.
+duration 支持 `7d` `30d` `3m` `6m` `12m`，不支持 `24h`。
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/infomarkets/kols?duration=12m&limit=100" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/infomarkets/kols?duration=12m&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### exchange Heatmap
+### Exchange Heatmap
 
-```text
+```
 GET /api/exchange?duration=24h&limit=50
 ```
 
-Default duration is `24h`.
-
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/exchange?duration=30d&limit=50" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/exchange?duration=30d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ### Arena Top Voices
 
-```text
+```
 GET /api/arena/voices?vertical=stock&duration=7d&limit=50
 ```
 
-`vertical` can be `stock`, `ai`, or `crypto`. Top Voices supports `7d`, `30d`, `3m`, `6m`, and `12m`.
+`vertical`：`stock` `ai` `crypto`
+`duration`：`7d` `30d` `3m` `6m` `12m`
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/arena/voices?vertical=crypto&duration=7d&limit=100" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/arena/voices?vertical=crypto&duration=7d&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ### Arena Top Companies
 
-```text
+```
 GET /api/arena/companies?vertical=stock&duration=24h&limit=50
 ```
 
-`vertical` can be `stock`, `ai`, or `crypto`. Top Companies supports `24h`, `7d`, `30d`, `3m`, `6m`, and `12m`.
+`vertical`：`stock` `ai` `crypto`
+`duration`：`24h` `7d` `30d` `3m` `6m` `12m`
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/arena/companies?vertical=stock&duration=24h&limit=100" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/arena/companies?vertical=stock&duration=24h&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### Read Any Snapshot By Key
+### 按 Key 读取任意快照
 
-```text
+```
 GET /api/snapshot/:key?limit=50
 ```
 
-Examples:
+`key` 需要 URL 编码（`:` 编码为 `%3A`）。
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/snapshot/pre-tge:24h:heatmap?limit=50" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/snapshot/pre-tge%3A24h%3Aheatmap?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 
-curl "https://kaito-scan-production.up.railway.app/api/snapshot/infomarkets:12m:kols?limit=100" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/snapshot/arena-voices-crypto%3A7d%3Aleaderboard?limit=100" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+curl "https://kaito-scan-production-0895.up.railway.app/api/snapshot/arena-voices-stock%3Aall%3Adelta-all" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### Manual Update
+### Sparkline 代理（折线图数据）
 
-```text
+```
+GET /api/proxy/mindshare-line?user_ids=ID1,ID2&vertical=trading&duration=7d
+```
+
+转发 Kaito 的 `batch_mindshare_line` 端点，返回指定用户的历史 mindshare 折线数据。`vertical` 使用 Kaito 内部名称：`trading`（对应 stock）、`ai`、`crypto`。
+
+```bash
+curl "https://kaito-scan-production-0895.up.railway.app/api/proxy/mindshare-line?user_ids=258480276,14470&vertical=crypto&duration=7d" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### 手动触发更新
+
+```
 POST /api/admin/update
 ```
 
-This manually triggers a new scrape.
-
 ```bash
-curl -X POST https://kaito-scan-production.up.railway.app/api/admin/update \
+curl -X POST https://kaito-scan-production-0895.up.railway.app/api/admin/update \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-## Response Shape
+---
 
-A single snapshot response looks like this:
+## 响应格式
+
+单个快照响应结构：
 
 ```json
 {
@@ -233,154 +281,143 @@ A single snapshot response looks like this:
   "source": "pre-tge",
   "dataset": "heatmap",
   "duration": "7d",
-  "updatedAt": "2026-05-20T00:05:12.000Z",
+  "updatedAt": "2026-11-03T08:05:12.000Z",
   "count": 50,
-  "data": []
+  "data": [
+    {
+      "rank": 1,
+      "ticker": "AAVE",
+      "mindshare": 0.0421,
+      "change_7d": 0.0031
+    }
+  ]
 }
 ```
 
-If you pass `limit`, the `data` array returns only the first N items.
+Arena leaderboard 响应结构（voices/companies）：
 
-## Railway Environment Variables
-
-Recommended variables:
-
-```text
-SCRAPE_CONCURRENCY=5
-API_KEY=YOUR_API_KEY
+```json
+{
+  "key": "arena-voices-crypto:7d:leaderboard",
+  "data": [
+    {
+      "rank": 1,
+      "user_id": "123456",
+      "name": "Stan Druckenmiller",
+      "username": "standuquesne",
+      "avatar": "https://pbs.twimg.com/profile_images/...",
+      "mindshare": 0.0966,
+      "mindshare_delta": 0.0966
+    }
+  ]
+}
 ```
 
-Railway provides `PORT` automatically.
+Delta-all 响应结构：
 
-## Local Run
-
-Install dependencies:
-
-```bash
-npm install
+```json
+{
+  "key": "arena-voices-stock:all:delta-all",
+  "data": [
+    {
+      "rank": 1,
+      "username": "jukan05",
+      "avatar": "https://pbs.twimg.com/...",
+      "mindshare": 0.0049,
+      "change_7d": 0.00093,
+      "change_30d": 0.00086,
+      "change_3m": 0.00055,
+      "change_6m": 0.00049,
+      "change_12m": 0.00079
+    }
+  ]
+}
 ```
 
-Start server:
+`limit` 参数控制 `data` 数组返回的最大条数，默认无限制。
 
-```bash
-npm start
+---
+
+## 历史数据 API
+
+配置 `DATABASE_URL` 环境变量后，每次成功抓取的数据会写入 Postgres，支持历史查询。
+
+### 查询历史快照
+
 ```
-
-Open:
-
-```text
-http://localhost:3000
-http://localhost:3000/api/status
-```
-
-For local API calls, include your API key if `API_KEY` is set.
-
-## Notes
-
-- API users read your cached snapshots.
-- API calls do not trigger Kaito requests.
-- The service updates every hour at minute `05`.
-- Railway filesystem is not guaranteed to be permanent across rebuilds.
-- For long-term history, add Postgres or object storage later.
-
-
-## History API
-
-When `DATABASE_URL` is configured, every successful scrape is stored in Postgres.
-
-### Query Historical Snapshots
-
-```text
 GET /api/history/query
 ```
 
-Query parameters:
+参数：
 
-```text
-source=pre-tge | infomarkets | exchange
-dataset=heatmap | topDelta | kols
+```
+source=pre-tge | infomarkets | exchange | arena-voices-stock | arena-voices-ai | arena-voices-crypto | arena-companies-stock | arena-companies-ai | arena-companies-crypto
+dataset=heatmap | topDelta | kols | leaderboard | delta-all
 duration=24h | 7d | 30d | 3m | 6m | 12m
-from=2026-06-01
-to=2026-06-09
+from=2026-10-01
+to=2026-11-03
 interval=hour | day
 limit=50
 ```
 
-Arena history sources are concrete per vertical:
-
-```text
-arena-voices-stock
-arena-voices-ai
-arena-voices-crypto
-arena-companies-stock
-arena-companies-ai
-arena-companies-crypto
-```
-
-Use `dataset=leaderboard` for Arena history.
-
-`interval=hour` returns every hourly snapshot in the range. `interval=day` groups by Asia/Shanghai calendar day and returns the latest snapshot for each day. `limit` caps items inside each snapshot; default is `50`, maximum is `500`.
+`interval=day` 按上海时区日历天分组，每天取最新一条。
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/query?source=pre-tge&dataset=heatmap&duration=24h&from=2026-06-01&to=2026-06-09&interval=day&limit=50" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/history/query?source=arena-voices-crypto&dataset=leaderboard&duration=7d&from=2026-10-01&to=2026-11-03&interval=day&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-Response:
+### 最近抓取记录
 
-```json
-{
-  "source": "pre-tge",
-  "dataset": "heatmap",
-  "duration": "24h",
-  "interval": "day",
-  "from": "2026-06-01",
-  "to": "2026-06-09",
-  "count": 9,
-  "snapshots": []
-}
 ```
-
-### List Recent Runs
-
-```text
 GET /api/history/runs?limit=24
 ```
 
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/runs?limit=24" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+### 某次抓取的所有快照
+
 ```
-
-### List Snapshots In One Run
-
-```text
 GET /api/history/run/:runId
 ```
 
-```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/run/1" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+### 某个 key 的历史记录
+
 ```
-
-### List History For One Snapshot Key
-
-```text
 GET /api/history/snapshot/:key?limit=24
 ```
 
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/snapshot/pre-tge:24h:heatmap?limit=24" \
+curl "https://kaito-scan-production-0895.up.railway.app/api/history/snapshot/arena-voices-stock%3A7d%3Aleaderboard?limit=24" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### Read One Historical Snapshot
+### 读取单条历史快照
 
-```text
+```
 GET /api/history/item/:id?limit=50
 ```
 
+---
+
+## 本地运行
+
 ```bash
-curl "https://kaito-scan-production.up.railway.app/api/history/item/1?limit=50" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+npm install
+npm start
 ```
+
+访问：
+
+```
+http://localhost:3000
+http://localhost:3000/api/status
+```
+
+## Railway 环境变量
+
+```
+API_KEY=YOUR_API_KEY
+SCRAPE_CONCURRENCY=5
+DATABASE_URL=postgres://...   # 可选，开启历史存储
+```
+
+`PORT` 由 Railway 自动注入。
