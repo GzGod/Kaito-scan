@@ -271,6 +271,122 @@ curl -X POST https://kaito-scan-production-0895.up.railway.app/api/admin/update 
 
 ---
 
+## KOL Smart Followers API
+
+按需查询任意 KOL 的 smart followers 数据（被多少 Kaito 认定的 smart 账号关注），数据源是 Kaito 的 `voices/social_card` 接口，不需要 Kaito 账号。
+
+- 实时向 Kaito 查询，单个 KOL 首次约 2–5 秒，之后缓存 1 小时（约 1ms）
+- `:id` 可以是 Twitter 数字 ID，也可以是用户名（带不带 `@` 都行，不区分大小写）
+- 用户名只能解析**已出现在任一缓存榜单里**的账号（Top Voices / KOL 榜 / language / SF 榜等，约上千个），或者之前在 `topSmartFollowers` 里出现过的账号；其他账号请传数字 ID
+- `scope`：`all`（默认，三个分类一次返回）、`crypto`、`ai`、`trading`（`stock` 是 `trading` 的别名）
+
+### 单个 KOL 概览
+
+```
+GET /api/kol/:id?scope=all
+```
+
+```bash
+curl "https://kaito-scan-production-0895.up.railway.app/api/kol/jukan05" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+响应：
+
+```json
+{
+  "userId": "1836240683268759552",
+  "username": "jukan05",
+  "name": "Jukan",
+  "avatar": "https://pbs.twimg.com/profile_images/...",
+  "bio": "@citrini",
+  "language": "English",
+  "identityTags": ["analyst", "market_commentator"],
+  "scope": "all",
+  "smartFollowers": 4158,
+  "followers": 222076,
+  "sfLabel": "Elite",
+  "smartEngagement": 8144,
+  "impression": 253682462,
+  "categories": {
+    "crypto":  { "smartFollowers": 1337, "relevantTweetCount": 947 },
+    "ai":      { "smartFollowers": 934,  "relevantTweetCount": 732 },
+    "trading": { "smartFollowers": 1029, "relevantTweetCount": 1300 }
+  }
+}
+```
+
+| 字段 | 含义 |
+|---|---|
+| `smartFollowers` | 关注他的 smart 账号总数（全分类） |
+| `categories.<scope>.smartFollowers` | 该分类下的 smart 关注者数 |
+| `sfLabel` | Kaito 给的 smart follower 等级标签，如 `Elite` |
+| `followers` | 推特总粉丝数 |
+| `smartEngagement` | smart 账号互动量 |
+
+传单个 scope（如 `?scope=crypto`）时没有 `categories`，改为顶层的 `smartFollowers`（该分类）和 `relevantTweetCount`。
+
+### 关注他的 Smart 账号（详情）
+
+```
+GET /api/kol/:id/followers?scope=crypto
+```
+
+必须指定单个 scope（默认 `crypto`）。除概览字段外，额外返回：
+
+- `topSmartFollowers`：关注他的头部 smart 账号列表（约 35 个），每项含 `userId` `username` `name` `avatar` `mindshare`
+- `smartFollowerRank` / `smartFollowerShare`：smart follower 排名和占比的历史序列
+- `mindshareRank` / `mindshareShare`、`smartFollowerBreakdown`、`engagementDetails`、`impressionDetails`、`contentFormat`、`contentActivity`、`sponsored`、`cryptoRolePercentage`（Kaito 原样透传）
+
+```bash
+curl "https://kaito-scan-production-0895.up.railway.app/api/kol/jukan05/followers?scope=crypto" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### 批量查询
+
+```
+GET  /api/kol/batch?ids=jukan05,hosseeb,1836240683268759552&scope=crypto
+POST /api/kol/batch   body: {"ids": [...], "scope": "crypto"}
+```
+
+单次上限：`scope=all` 时 20 个，单个 scope 时 50 个（`all` 每个 KOL 要请求 3 次）。
+
+```bash
+curl -X POST "https://kaito-scan-production-0895.up.railway.app/api/kol/batch" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"ids":["jukan05","hosseeb","blknoiz06"],"scope":"crypto"}'
+```
+
+响应：
+
+```json
+{
+  "scope": "crypto",
+  "count": 3,
+  "items": {
+    "jukan05":   { "userId": "1836240683268759552", "smartFollowers": 1337, "...": "..." },
+    "hosseeb":   { "userId": "231208649", "smartFollowers": 5099, "...": "..." },
+    "blknoiz06": { "userId": "973261472", "smartFollowers": 6026, "...": "..." }
+  },
+  "unresolved": [],
+  "errors": {}
+}
+```
+
+`items` 的 key 是你传入的原始值；查不到的为 `null` 并列入 `unresolved`；Kaito 请求失败的列入 `errors`。
+
+### 错误码
+
+| HTTP | 情况 |
+|---|---|
+| 400 | `scope` 不支持；`detail` 配 `scope=all`；批量为空或超上限；body 不是合法 JSON |
+| 404 | 用户名不在缓存榜单里，或该 ID 在 Kaito 没有数据 |
+| 502 | Kaito 上游请求失败（限流或接口变更） |
+
+---
+
 ## 响应格式
 
 单个快照响应结构：

@@ -6,6 +6,65 @@ const { parseHistoryQuery } = require('./history-query');
 const { DATASET_ROUTES, SUPPORTED_DURATIONS, getRequestedVertical } = require('./routes');
 const { getCachedJson, setCachedJson } = require('./response-cache');
 const { filterSnapshot, getRequestedDuration, sendHtml, sendJson, sendJsonBody } = require('./http-utils');
+const { KolError, getKol, getKolBatch } = require('./kol');
+
+const KOL_BODY_LIMIT_BYTES = 64 * 1024;
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > KOL_BODY_LIMIT_BYTES) {
+        reject(new KolError(413, 'body too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (!chunks.length) return resolve({});
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      } catch {
+        reject(new KolError(400, 'invalid json body'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+async function handleKolRoute(req, url, res) {
+  if (!url.pathname.startsWith('/api/kol')) return false;
+  try {
+    if (url.pathname === '/api/kol/batch') {
+      let ids = (url.searchParams.get('ids') || '').split(',');
+      let scope = url.searchParams.get('scope');
+      if (req.method === 'POST') {
+        const body = await readJsonBody(req);
+        if (Array.isArray(body.ids)) ids = body.ids;
+        if (body.scope) scope = body.scope;
+      }
+      sendJson(res, 200, await getKolBatch(ids, { scope }));
+      return true;
+    }
+    const match = url.pathname.match(/^\/api\/kol\/([^/]+)(\/followers)?$/);
+    if (!match) return false;
+    const input = decodeURIComponent(match[1]);
+    const detail = Boolean(match[2]) || url.searchParams.get('detail') === '1';
+    const scope = url.searchParams.get('scope') || (detail ? 'crypto' : 'all');
+    sendJson(res, 200, await getKol(input, { scope, detail }));
+  } catch (error) {
+    if (error instanceof KolError) {
+      sendJson(res, error.status, { error: error.message, ...error.extra });
+    } else {
+      console.error('kol route failed:', error.message);
+      sendJson(res, 502, { error: 'upstream error', message: String(error.message).slice(0, 300) });
+    }
+  }
+  return true;
+}
 
 function sendCachedJson(req, res, cacheKey) {
   const cached = getCachedJson(cacheKey);
@@ -212,6 +271,7 @@ function createRequestHandler({ apiKey }) {
     }
 
     if (await handleHistoryRoute(url, res)) return;
+    if (await handleKolRoute(req, url, res)) return;
 
     if (url.pathname.startsWith('/api/snapshot/')) {
       const requestCacheKey = getRequestCacheKey(url);
