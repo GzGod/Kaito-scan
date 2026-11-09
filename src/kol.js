@@ -50,13 +50,48 @@ function rebuildHandleIndex() {
   handleIndexVersion = version;
 }
 
-function resolveUserId(input) {
+const HANDLE_PATTERN = /^[A-Za-z0-9_]{1,15}$/;
+const HANDLE_LOOKUP_TIMEOUT_MS = 10000;
+const HANDLE_MISS_TTL_MS = 10 * 60 * 1000;
+const handleMisses = new Map();
+const handleLookups = new Map();
+
+async function lookupHandleRemote(handle) {
+  const response = await fetch(`https://api.fxtwitter.com/${encodeURIComponent(handle)}`, {
+    headers: { 'user-agent': 'kaito-scan/1.0' },
+    signal: AbortSignal.timeout(HANDLE_LOOKUP_TIMEOUT_MS),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new KolError(502, 'handle lookup failed', { status: response.status });
+  const body = await response.json();
+  const id = body?.user?.id;
+  return id && /^\d+$/.test(String(id)) ? String(id) : null;
+}
+
+async function resolveUserId(input) {
   const raw = String(input || '').trim().replace(/^@/, '');
   if (!raw) return null;
   if (/^\d+$/.test(raw)) return raw;
+  if (!HANDLE_PATTERN.test(raw)) return null;
   rebuildHandleIndex();
   const key = raw.toLowerCase();
-  return handleIndex.get(key) || learnedHandles.get(key) || null;
+  const known = handleIndex.get(key) || learnedHandles.get(key);
+  if (known) return known;
+
+  const missedAt = handleMisses.get(key);
+  if (missedAt && Date.now() - missedAt < HANDLE_MISS_TTL_MS) return null;
+
+  if (!handleLookups.has(key)) {
+    const lookup = lookupHandleRemote(raw)
+      .then((id) => {
+        if (id) learnedHandles.set(key, id);
+        else handleMisses.set(key, Date.now());
+        return id;
+      })
+      .finally(() => handleLookups.delete(key));
+    handleLookups.set(key, lookup);
+  }
+  return handleLookups.get(key);
 }
 
 function cached(key, loader) {
@@ -122,7 +157,7 @@ function totals(payload) {
 function notFound(input) {
   return new KolError(404, 'kol not found', {
     input,
-    hint: 'pass a numeric twitter user_id, or a handle that appears in a cached leaderboard',
+    hint: 'the handle does not exist, or Kaito has no social card for this account',
   });
 }
 
@@ -170,7 +205,7 @@ async function getKol(input, { scope: rawScope, detail = false } = {}) {
   if (detail && scope === 'all') {
     throw new KolError(400, 'detail requires a single scope', { supportedScopes: [...SCOPES, 'stock'] });
   }
-  const userId = resolveUserId(input);
+  const userId = await resolveUserId(input);
   if (!userId) throw notFound(input);
   if (scope === 'all') return getKolAllScopes(userId, input);
   return getKolScope(userId, input, scope, detail);

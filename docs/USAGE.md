@@ -277,7 +277,7 @@ curl -X POST https://kaito-scan-production-0895.up.railway.app/api/admin/update 
 
 - 实时向 Kaito 查询，单个 KOL 首次约 2–5 秒，之后缓存 1 小时（约 1ms）
 - `:id` 可以是 Twitter 数字 ID，也可以是用户名（带不带 `@` 都行，不区分大小写）
-- 用户名只能解析**已出现在任一缓存榜单里**的账号（Top Voices / KOL 榜 / language / SF 榜等，约上千个），或者之前在 `topSmartFollowers` 里出现过的账号；其他账号请传数字 ID
+- 用户名先在缓存榜单里查对应 ID；查不到时自动通过 fxtwitter 解析，结果记住，下次直接命中。首次解析会多 2–3 秒；不存在的用户名会被记 10 分钟，期间直接返回 404
 - `scope`：`all`（默认，三个分类一次返回）、`crypto`、`ai`、`trading`（`stock` 是 `trading` 的别名）
 
 ### 单个 KOL 概览
@@ -382,8 +382,8 @@ curl -X POST "https://kaito-scan-production-0895.up.railway.app/api/kol/batch" \
 | HTTP | 情况 |
 |---|---|
 | 400 | `scope` 不支持；`detail` 配 `scope=all`；批量为空或超上限；body 不是合法 JSON |
-| 404 | 用户名不在缓存榜单里，或该 ID 在 Kaito 没有数据 |
-| 502 | Kaito 上游请求失败（限流或接口变更） |
+| 404 | 用户名不存在，或该账号在 Kaito 没有数据 |
+| 502 | Kaito 或 fxtwitter 上游请求失败（限流或接口变更） |
 
 ---
 
