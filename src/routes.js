@@ -1,4 +1,7 @@
 const SUPPORTED_DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
+// Ticker datasets additionally accept 48h (hourly series, like 24h). The
+// arena endpoints reject it with 400, so it is not in SUPPORTED_DURATIONS.
+const TICKER_DURATIONS = ['24h', '48h', '7d', '30d', '3m', '6m', '12m'];
 const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
 const ARENA_PUBLIC_VERTICALS = ['stock', 'ai', 'crypto'];
 const ARENA_VERTICALS = ARENA_PUBLIC_VERTICALS;
@@ -6,14 +9,14 @@ const ARENA_VOICE_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
 const ARENA_COMPANY_DURATIONS = SUPPORTED_DURATIONS;
 
 const DATASET_ROUTES = {
-  '/api/pre-tge': { source: 'pre-tge', dataset: 'heatmap', defaultDuration: '24h' },
-  '/api/pre-tge/top-delta': { source: 'pre-tge', dataset: 'topDelta', defaultDuration: '24h' },
-  '/api/infomarkets': { source: 'infomarkets', dataset: 'heatmap', defaultDuration: '24h' },
+  '/api/pre-tge': { source: 'pre-tge', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
+  '/api/pre-tge/top-delta': { source: 'pre-tge', dataset: 'topDelta', defaultDuration: '24h', durations: TICKER_DURATIONS },
+  '/api/infomarkets': { source: 'infomarkets', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/infomarkets/kols': { source: 'infomarkets', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS, datasets: ['ai', 'kaito'] },
-  '/api/nft': { source: 'nft', dataset: 'heatmap', defaultDuration: '24h' },
-  '/api/nft/top-delta': { source: 'nft', dataset: 'topDelta', defaultDuration: '24h' },
+  '/api/nft': { source: 'nft', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
+  '/api/nft/top-delta': { source: 'nft', dataset: 'topDelta', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/pre-tge/kols': { source: 'pre-tge', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS },
-  '/api/exchange': { source: 'exchange', dataset: 'heatmap', defaultDuration: '24h' },
+  '/api/exchange': { source: 'exchange', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/arena/voices': {
     sourcePrefix: 'arena-voices',
     dataset: 'leaderboard',
@@ -59,4 +62,5 @@ module.exports = {
   KOL_DURATIONS,
   resolveRouteKey,
   SUPPORTED_DURATIONS,
+  TICKER_DURATIONS,
 };

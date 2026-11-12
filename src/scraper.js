@@ -13,7 +13,10 @@ const MAX_ATTEMPTS = 6;
 const CONCURRENCY = Number(process.env.SCRAPE_CONCURRENCY || 6);
 const RATE_LIMIT_RECOVERY_MS = Number(process.env.SCRAPE_RATE_LIMIT_RECOVERY_MS || 5000);
 const FETCH_TIMEOUT_MS = Number(process.env.SCRAPE_FETCH_TIMEOUT_MS || 30000);
-const DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
+const DURATIONS = ['24h', '48h', '7d', '30d', '3m', '6m', '12m'];
+// The arena (voices/*) endpoints accept only the six standard windows; 48h is
+// ticker-only (it returns hourly points like 24h).
+const TICKER_DURATIONS = DURATIONS;
 const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
 const ARENA_LEADERBOARD_LIMIT = 100;
 const GITHUB_DURATIONS = ['24h', '7d', '30d'];
