@@ -16,6 +16,10 @@ const pool = DATABASE_URL
 
 let initialized = false;
 
+// Hourly runs write ~112 full JSONB snapshots each, which fills the Railway
+// volume in a few weeks. 0 disables pruning.
+const HISTORY_RETENTION_DAYS = Number(process.env.HISTORY_RETENTION_DAYS ?? 30);
+
 function hasDatabase() {
   return Boolean(pool);
 }
@@ -77,6 +81,20 @@ async function initDatabase() {
   initialized = true;
 }
 
+async function pruneHistory(client) {
+  if (!HISTORY_RETENTION_DAYS || HISTORY_RETENTION_DAYS <= 0) return 0;
+  const result = await client.query(
+    `WITH expired AS (
+       DELETE FROM scrape_runs
+       WHERE started_at < NOW() - make_interval(days => $1)
+       RETURNING id
+     )
+     SELECT count(*)::int AS removed FROM expired`,
+    [Math.floor(HISTORY_RETENTION_DAYS)]
+  );
+  return result.rows[0]?.removed || 0;
+}
+
 async function saveHistory(result) {
   if (!pool) return { enabled: false };
   await initDatabase();
@@ -110,7 +128,8 @@ async function saveHistory(result) {
       );
     }
     await client.query('COMMIT');
-    return { enabled: true, runId: Number(runId), snapshots: result.snapshots.length };
+    const pruned = await pruneHistory(client);
+    return { enabled: true, runId: Number(runId), snapshots: result.snapshots.length, prunedRuns: pruned };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
