@@ -16,6 +16,7 @@ const FETCH_TIMEOUT_MS = Number(process.env.SCRAPE_FETCH_TIMEOUT_MS || 30000);
 const DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
 const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
 const ARENA_LEADERBOARD_LIMIT = 100;
+const GITHUB_DURATIONS = ['24h', '7d', '30d'];
 
 const PROTECTED_BASE_URLS = {
   ai: AI_BASE_URL,
@@ -267,9 +268,12 @@ function arenaJobs() {
     ])
   ));
   const followersJobs = ARENA_VERTICALS.flatMap((vertical) => (
-    ARENA_VOICE_DURATIONS.map((duration) => arenaFollowersJob({ vertical, duration }))
+    ARENA_VOICE_DURATIONS
+      .filter((duration) => !(vertical === 'crypto' && duration === '12m'))
+      .map((duration) => arenaFollowersJob({ vertical, duration }))
   ));
-  const githubJobs = ARENA_VOICE_DURATIONS.map((duration) => arenaGithubJob({ duration }));
+  // github_repos only accepts 24h/7d/30d; 3m+ returns 400.
+  const githubJobs = GITHUB_DURATIONS.map((duration) => arenaGithubJob({ duration }));
   const deltaAllJobs = ARENA_VERTICALS.map((vertical) => arenaDeltaAllJob({ vertical }));
   return [...voiceJobs, ...companyJobs, ...languageJobs, ...followersJobs, ...githubJobs, ...deltaAllJobs];
 }
