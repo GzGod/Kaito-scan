@@ -18,7 +18,13 @@ async function ensureDataDir() {
 }
 
 async function loadStore() {
-  await initDatabase();
+  try {
+    await initDatabase();
+  } catch (error) {
+    // The database is optional: the service must still serve cached snapshots
+    // when Postgres is unreachable or not yet provisioned.
+    console.warn('Database unavailable, continuing without history storage:', error.message);
+  }
   try {
     const raw = await fs.readFile(SNAPSHOT_FILE, 'utf8');
     memory = JSON.parse(raw);
@@ -55,7 +61,12 @@ async function saveScrapeResult(result) {
         }
       : null,
   };
-  const history = await saveHistory(result);
+  let history = null;
+  try {
+    history = await saveHistory(result);
+  } catch (error) {
+    console.warn('Failed to persist scrape history:', error.message);
+  }
   memory.lastRun.history = history;
   rebuildResponseCache(memory);
   await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(memory, null, 2));
@@ -76,10 +87,12 @@ function getStore() {
 }
 
 async function getDatabaseStatus() {
-  return {
-    enabled: hasDatabase(),
-    latestRun: hasDatabase() ? await getLatestRun() : null,
-  };
+  if (!hasDatabase()) return { enabled: false, latestRun: null };
+  try {
+    return { enabled: true, latestRun: await getLatestRun() };
+  } catch (error) {
+    return { enabled: true, reachable: false, error: String(error.message).slice(0, 200), latestRun: null };
+  }
 }
 
 function getSnapshot(key) {
