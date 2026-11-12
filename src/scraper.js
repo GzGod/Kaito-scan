@@ -22,9 +22,12 @@ const ARENA_LEADERBOARD_LIMIT = 100;
 const GITHUB_DURATIONS = ['24h', '7d', '30d'];
 // Kaito serves en/zh/ko; ja and every other value return 400.
 const ARENA_LANGUAGES = ['en', 'zh', 'ko'];
-// Valid topic_id values on kol/mindshare/top-leaderboard. Any other value
-// returns 400; EXCHANGE and PRETGE alias INFOMKT exactly.
-const KOL_TOPICS = ['AI', 'KAITO'];
+// Valid topic_id values on kol/mindshare/top-leaderboard that produce a
+// ranking distinct from the default INFOMKT board. Any other value returns
+// 400; EXCHANGE and PRETGE resolve to INFOMKT byte-for-byte and are skipped.
+// Overlap with INFOMKT over the top 100: AI 27, ETH 17, ZK 7, MONAD 3,
+// KAITO 0.
+const KOL_TOPICS = ['AI', 'KAITO', 'ETH', 'ZK', 'MONAD'];
 
 const PROTECTED_BASE_URLS = {
   ai: AI_BASE_URL,

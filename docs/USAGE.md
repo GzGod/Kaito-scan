@@ -28,7 +28,7 @@ Dashboard 首页 `/` 不需要认证，公开访问。
 
 ## 快照总览
 
-当前共 **160 个快照**，每次更新全部刷新。
+当前共 **175 个快照**，每次更新全部刷新。
 
 ### Classic 数据集（Tickers）
 
@@ -53,8 +53,21 @@ KOL 榜只支持 `7d` `30d` `3m` `6m` `12m`（不含 24h）：
 | `GET /api/infomarkets/kols` | `infomarkets:<duration>:kols` |
 | `GET /api/infomarkets/kols?topic=ai` | `infomarkets:<duration>:kols-ai` |
 | `GET /api/infomarkets/kols?topic=kaito` | `infomarkets:<duration>:kols-kaito` |
+| `GET /api/infomarkets/kols?topic=eth` | `infomarkets:<duration>:kols-eth` |
+| `GET /api/infomarkets/kols?topic=zk` | `infomarkets:<duration>:kols-zk` |
+| `GET /api/infomarkets/kols?topic=monad` | `infomarkets:<duration>:kols-monad` |
 
-`topic` 是独立榜单，不是筛选——`kaito` 榜和默认榜的 100 人零重合，`ai` 约 27 人重合。只支持 `ai` 和 `kaito` 两个值（其他返回 400）。Kaito 还接受 `EXCHANGE` 和 `PRETGE`，但两者结果与默认榜完全相同，所以没有单独存。
+`topic` 是**独立榜单**，不是筛选。和默认榜（顶层 100 人）的重合度：
+
+| topic | 与默认榜重合 |
+|---|---|
+| `monad` | 3 / 100 |
+| `kaito` | 0 / 100 |
+| `zk` | 7 / 100 |
+| `eth` | 17 / 100 |
+| `ai` | 27 / 100 |
+
+只支持 `ai` `kaito` `eth` `zk` `monad` 五个值（其他返回 400 并列出支持的值）。Kaito 服务端还接受 `EXCHANGE` 和 `PRETGE`，但两者结果与默认榜逐字节相同，所以没有单独存。
 
 ### Arena 数据集
 

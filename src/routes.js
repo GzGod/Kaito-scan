@@ -12,7 +12,7 @@ const DATASET_ROUTES = {
   '/api/pre-tge': { source: 'pre-tge', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/pre-tge/top-delta': { source: 'pre-tge', dataset: 'topDelta', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/infomarkets': { source: 'infomarkets', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
-  '/api/infomarkets/kols': { source: 'infomarkets', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS, datasets: ['ai', 'kaito'] },
+  '/api/infomarkets/kols': { source: 'infomarkets', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS, datasets: ['ai', 'kaito', 'eth', 'zk', 'monad'] },
   '/api/nft': { source: 'nft', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/nft/top-delta': { source: 'nft', dataset: 'topDelta', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/pre-tge/kols': { source: 'pre-tge', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS },
