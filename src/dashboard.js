@@ -107,7 +107,7 @@ function buildPayload(snapshots) {
     out['arena-language'][vertical] = {};
     for (const duration of ARENA_VOICE_DURATIONS) {
       out['arena-language'][vertical][duration] = {};
-      for (const lang of ['en', 'zh']) {
+      for (const lang of ['en', 'zh', 'ko']) {
         out['arena-language'][vertical][duration][lang] = snapshotItems(snapshots, `arena-voices-${vertical}`, duration, `language-${lang}`).slice(0, 100).map((item, i) => ({
           rank: item?.rank || i + 1,
           name: item?.name || item?.username || '',
@@ -279,6 +279,7 @@ svg.tm{width:100%;height:100%}
   <div id="seg-language" class="seg" style="display:none">
     <button data-v="en" class="on">EN</button>
     <button data-v="zh">ZH</button>
+    <button data-v="ko">KO</button>
   </div>
   <div class="filter-sep" id="fsep-l" style="display:none"></div>
   <div id="seg-duration" class="seg"></div>

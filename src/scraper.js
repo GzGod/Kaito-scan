@@ -17,6 +17,8 @@ const DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m'];
 const KOL_DURATIONS = ['7d', '30d', '3m', '6m', '12m'];
 const ARENA_LEADERBOARD_LIMIT = 100;
 const GITHUB_DURATIONS = ['24h', '7d', '30d'];
+// Kaito serves en/zh/ko; ja and every other value return 400.
+const ARENA_LANGUAGES = ['en', 'zh', 'ko'];
 
 const PROTECTED_BASE_URLS = {
   ai: AI_BASE_URL,
@@ -191,7 +193,7 @@ function arenaDeltaAllJob({ vertical }) {
     duration: 'all',
     service: 'arena',
     route: `voices/${routeVertical}/mindshare_delta_all`,
-    params: { sector: 'ALL', limit: 100 },
+    params: { sector: 'ALL', limit: 500 },
   };
 }
 
@@ -280,10 +282,9 @@ function arenaJobs() {
     ARENA_COMPANY_DURATIONS.map((duration) => arenaLeaderboardJob({ mode: 'companies', vertical, duration }))
   ));
   const languageJobs = ARENA_VERTICALS.flatMap((vertical) => (
-    ARENA_VOICE_DURATIONS.flatMap((duration) => [
-      arenaLanguageJob({ vertical, duration, language: 'en' }),
-      arenaLanguageJob({ vertical, duration, language: 'zh' }),
-    ])
+    ARENA_VOICE_DURATIONS.flatMap((duration) => ARENA_LANGUAGES.map((language) => (
+      arenaLanguageJob({ vertical, duration, language })
+    )))
   ));
   const followersJobs = ARENA_VERTICALS.flatMap((vertical) => (
     ARENA_VOICE_DURATIONS

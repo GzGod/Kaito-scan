@@ -28,7 +28,7 @@ Dashboard 首页 `/` 不需要认证，公开访问。
 
 ## 快照总览
 
-当前共 **115 个快照**，每次更新全部刷新。
+当前共 **132 个快照**，每次更新全部刷新。
 
 ### Classic 数据集（Tickers）
 
@@ -66,16 +66,15 @@ KOL 榜只支持 `7d` `30d` `3m` `6m` `12m`（不含 24h）：
 | `ai` | `arena-companies-ai:<duration>:leaderboard` |
 | `crypto` | `arena-companies-crypto:<duration>:leaderboard` |
 
-**Language Region**（EN/ZH，支持 `7d` `30d` `3m` `6m` `12m`）：
+**Language Region**（EN/ZH/KO，支持 `7d` `30d` `3m` `6m` `12m`）：
 
 ```
-arena-voices-stock:<duration>:language-en
-arena-voices-stock:<duration>:language-zh
-arena-voices-ai:<duration>:language-en
-arena-voices-ai:<duration>:language-zh
-arena-voices-crypto:<duration>:language-en
-arena-voices-crypto:<duration>:language-zh
+arena-voices-<vertical>:<duration>:language-en
+arena-voices-<vertical>:<duration>:language-zh
+arena-voices-<vertical>:<duration>:language-ko
 ```
+
+`vertical` 为 `stock` / `ai` / `crypto`。语言只支持 `en` `zh` `ko`——`ja`、`es` 等其他值返回 400。韩语区在 trading 和 crypto 两个分类数据较多（7d 约 95–100 人），AI 分类较少（7d 只有 6 人，12m 才有 98 人）。
 
 **Smart Followers**（支持 `7d` `30d` `3m` `6m` `12m`）：
 
