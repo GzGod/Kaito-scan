@@ -1,19 +1,19 @@
 {
-    "name":  "kaito-scan",
-    "version":  "1.0.0",
-    "description":  "Hourly cached Kaito mindshare snapshots with a small API and dashboard.",
-    "main":  "src/server.js",
-    "scripts":  {
-                    "start":  "node src/server.js",
-                    "scrape":  "node kaito-live-fast-scrape.js",
-                    "test":  "node --test",
-                    "check":  "node --check src/server.js \u0026\u0026 node --check src/api.js \u0026\u0026 node --check src/routes.js \u0026\u0026 node --check src/scraper.js \u0026\u0026 node --check src/store.js \u0026\u0026 node --check src/db.js \u0026\u0026 node --check src/worker.js \u0026\u0026 node --check src/dashboard.js \u0026\u0026 node --check src/history-query.js && node --check src/kol.js"
-                },
-    "dependencies":  {
-                         "crypto-js":  "^4.2.0",
-                         "pg":  "^8.21.0"
-                     },
-    "engines":  {
-                    "node":  "\u003e=20"
-                }
+  "name": "kaito-scan",
+  "version": "1.0.0",
+  "description": "Hourly cached Kaito mindshare snapshots with a small API and dashboard.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "scrape": "node kaito-live-fast-scrape.js",
+    "test": "node --test",
+    "check": "node --check src/server.js && node --check src/api.js && node --check src/routes.js && node --check src/scraper.js && node --check src/store.js && node --check src/db.js && node --check src/worker.js && node --check src/dashboard.js && node --check src/history-query.js && node --check src/kol.js && node --check src/compact.js"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "pg": "^8.21.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }

@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const { getLatestRun, hasDatabase, initDatabase, saveHistory } = require('./db');
 const { rebuildResponseCache } = require('./response-cache');
+const { decodeSnapshot, encodeSnapshot } = require('./compact');
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SNAPSHOT_FILE = path.join(DATA_DIR, 'snapshots.json');
@@ -31,8 +32,21 @@ async function loadStore() {
   } catch (error) {
     if (error.code !== 'ENOENT') console.warn('Failed to load snapshot store:', error.message);
   }
+  memory = { ...memory, snapshots: expandSnapshots(memory.snapshots || {}) };
   rebuildResponseCache(memory);
   return memory;
+}
+
+function expandSnapshots(snapshots) {
+  const out = {};
+  for (const [key, snapshot] of Object.entries(snapshots)) out[key] = decodeSnapshot(snapshot);
+  return out;
+}
+
+function compactSnapshots(snapshots) {
+  const out = {};
+  for (const [key, snapshot] of Object.entries(snapshots)) out[key] = encodeSnapshot(snapshot);
+  return out;
 }
 
 async function saveScrapeResult(result) {
@@ -69,8 +83,13 @@ async function saveScrapeResult(result) {
   }
   memory.lastRun.history = history;
   rebuildResponseCache(memory);
-  await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(memory, null, 2));
+  await writeStoreFile();
   return memory;
+}
+
+async function writeStoreFile() {
+  const onDisk = { ...memory, snapshots: compactSnapshots(memory.snapshots || {}) };
+  await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(onDisk));
 }
 
 async function setError(error) {
@@ -79,7 +98,7 @@ async function setError(error) {
     at: new Date().toISOString(),
   };
   await ensureDataDir();
-  await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(memory, null, 2));
+  await writeStoreFile();
 }
 
 function getStore() {
