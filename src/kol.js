@@ -125,6 +125,33 @@ function fetchSocialCard(kind, scope, userId) {
   });
 }
 
+function fetchCrossLeaderboard(userId) {
+  return cached(`cross:${userId}`, async () => {
+    try {
+      const payload = await fetchProtectedJson(
+        'kol/user_cross_leaderboard',
+        { twitter_user_id: userId, community_tier: 'tier1' },
+        `kol-cross:${userId}`,
+        'arena',
+      );
+      if (isEmpty(payload)) return null;
+      return {
+        topics: String(payload.topic_result || '')
+          .split(',')
+          .map((topic) => topic.trim())
+          .filter(Boolean),
+        tickers: (payload.ticker_metadata || []).map((ticker) => ({
+          ticker: ticker.ticker || null,
+          name: ticker.fullname || null,
+          logo: ticker.logo || null,
+        })),
+      };
+    } catch {
+      return null;
+    }
+  });
+}
+
 function profileFields(profile = {}) {
   return {
     userId: profile.user_id ? String(profile.user_id) : null,
@@ -169,13 +196,25 @@ async function getKolAllScopes(userId, input) {
   SCOPES.forEach((scope, index) => {
     categories[scope] = overviews[index] ? scopeFields(overviews[index]) : null;
   });
-  return { ...profileFields(first.profile), scope: 'all', ...totals(first), categories };
+  const cross = await fetchCrossLeaderboard(userId);
+  return {
+    ...profileFields(first.profile),
+    scope: 'all',
+    ...totals(first),
+    categories,
+    ...(cross ? { topics: cross.topics, tickers: cross.tickers } : {}),
+  };
 }
 
 async function getKolScope(userId, input, scope, detail) {
   const payload = await fetchSocialCard(detail ? 'details' : 'overview', scope, userId);
   if (!payload) throw notFound(input);
   const result = { ...profileFields(payload.profile), scope, ...totals(payload), ...scopeFields(payload) };
+  const cross = await fetchCrossLeaderboard(userId);
+  if (cross) {
+    result.topics = cross.topics;
+    result.tickers = cross.tickers;
+  }
   if (!detail) return result;
   return {
     ...result,

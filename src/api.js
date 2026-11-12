@@ -9,6 +9,7 @@ const { filterSnapshot, getRequestedDuration, sendHtml, sendJson, sendJsonBody }
 const { KolError, getKol, getKolBatch } = require('./kol');
 
 const KOL_BODY_LIMIT_BYTES = 64 * 1024;
+const TICKER_LINE_DURATIONS = ['24h', '7d', '30d', '3m', '6m', '12m', 'all'];
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -298,6 +299,40 @@ function createRequestHandler({ apiKey }) {
         const routeV = vertical === 'stock' ? 'trading' : vertical === 'companies-stock' ? 'equity' : vertical;
         const data = await fetchProtectedJson(`voices/${routeV}/batch_mindshare_line`, { user_ids: userIds, duration }, 'proxy-line', 'arena');
         res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=60' });
+        res.end(JSON.stringify(data));
+      } catch (err) {
+        return sendJson(res, 502, { error: String(err.message) });
+      }
+      return;
+    }
+
+    if (url.pathname === '/api/proxy/ticker-line') {
+      const ticker = url.searchParams.get('ticker') || '';
+      const duration = url.searchParams.get('duration') || '7d';
+      if (!ticker) return sendJson(res, 400, { error: 'ticker required' });
+      if (!TICKER_LINE_DURATIONS.includes(duration)) {
+        return sendJson(res, 400, { error: 'unsupported duration', supportedDurations: TICKER_LINE_DURATIONS });
+      }
+      try {
+        const { fetchProtectedJson } = require('./scraper');
+        const data = await fetchProtectedJson('tickers/mindshare-line', { ticker: ticker.toUpperCase(), duration }, 'proxy-ticker-line', 'ai');
+        res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=120' });
+        res.end(JSON.stringify(data));
+      } catch (err) {
+        return sendJson(res, 502, { error: String(err.message) });
+      }
+      return;
+    }
+
+    if (url.pathname === '/api/proxy/engagement') {
+      const duration = url.searchParams.get('duration') || '7d';
+      if (!TICKER_LINE_DURATIONS.includes(duration)) {
+        return sendJson(res, 400, { error: 'unsupported duration', supportedDurations: TICKER_LINE_DURATIONS });
+      }
+      try {
+        const { fetchProtectedJson } = require('./scraper');
+        const data = await fetchProtectedJson('tickers/engagement', { duration }, 'proxy-engagement', 'ai');
+        res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=300' });
         res.end(JSON.stringify(data));
       } catch (err) {
         return sendJson(res, 502, { error: String(err.message) });

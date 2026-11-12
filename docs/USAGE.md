@@ -258,6 +258,70 @@ curl "https://kaito-scan-production-0895.up.railway.app/api/proxy/mindshare-line
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
+### Tickert 折线（单个 ticker 的 mindshare 历史）
+
+```
+GET /api/proxy/ticker-line?ticker=BTC&duration=7d
+```
+
+转发 Kaito 的 `tickers/mindshare-line`。返回该 ticker 的 mindshare 时间序列。`duration` 支持 `24h` `7d` `30d` `3m` `6m` `12m` `all`（不支持 `1y`）。
+
+- `24h` 返回小时级数据（`interval: "1h"`，约 25 个点）
+- 其余按天（`interval: "1d"`），`all` 返回全部历史约 2500 个点
+- ticker 不存在时返回全 0 序列，不是 404
+
+```bash
+curl "https://kaito-scan-production-0895.up.railway.app/api/proxy/ticker-line?ticker=BTC&duration=30d" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+响应：
+
+```json
+{
+  "result": {
+    "interval": "1d",
+    "result": [
+      { "timestamp": 1793836800000, "mindshare": 0.1313526192337764 }
+    ]
+  },
+  "tickerData": {
+    "fullname": "Bitcoin",
+    "ticker_id": "BTC",
+    "display_ticker": "BTC",
+    "logo": "https://kaito-public-assets.s3.us-west-2.amazonaws.com/ticker-icons/BTC/..."
+  }
+}
+```
+
+### 全站互动量历史
+
+```
+GET /api/proxy/engagement?duration=7d
+```
+
+转发 Kaito 的 `tickers/engagement`。返回全站聚合的互动量时间序列，不按 ticker 拆分（传 ticker 参数会被忽略）。
+
+```bash
+curl "https://kaito-scan-production-0895.up.railway.app/api/proxy/engagement?duration=30d" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+响应：
+
+```json
+{
+  "interval": "1d",
+  "result": {
+    "total":      { "timestamp": [...], "mindshare": [...] },
+    "document":   { "timestamp": [...], "value": [...] },
+    "engagement": { "timestamp": [...], "value": [...] },
+    "twitterInCircleEngagement": { "timestamp": [...], "value": [...] }
+  },
+  "summaryData": { "document": 224335508, "engagement": 27250871075, "smartEngagement": 43655161 }
+}
+```
+
 ### 手动触发更新
 
 ```
@@ -323,6 +387,8 @@ curl "https://kaito-scan-production-0895.up.railway.app/api/kol/jukan05" \
 | `sfLabel` | Kaito 给的 smart follower 等级标签，如 `Elite` |
 | `followers` | 推特总粉丝数 |
 | `smartEngagement` | smart 账号互动量 |
+| `topics` | 该 KOL 主要涉及的 topic 标签（来自 Kaito 的 cross leaderboard，如 `["ETH","NEAR"]`） |
+| `tickers` | 该 KOL 关联的 ticker 列表，每项含 `ticker` `name` `logo` |
 
 传单个 scope（如 `?scope=crypto`）时没有 `categories`，改为顶层的 `smartFollowers`（该分类）和 `relevantTweetCount`。
 
