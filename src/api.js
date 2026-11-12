@@ -326,12 +326,14 @@ function createRequestHandler({ apiKey }) {
 
     if (url.pathname === '/api/proxy/engagement') {
       const duration = url.searchParams.get('duration') || '7d';
+      const ticker = url.searchParams.get('ticker');
       if (!TICKER_LINE_DURATIONS.includes(duration)) {
         return sendJson(res, 400, { error: 'unsupported duration', supportedDurations: TICKER_LINE_DURATIONS });
       }
       try {
         const { fetchProtectedJson } = require('./scraper');
-        const data = await fetchProtectedJson('tickers/engagement', { duration }, 'proxy-engagement', 'ai');
+        const params = ticker ? { ticker: ticker.toUpperCase(), duration } : { duration };
+        const data = await fetchProtectedJson('tickers/engagement', params, 'proxy-engagement', 'ai');
         res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=300' });
         res.end(JSON.stringify(data));
       } catch (err) {

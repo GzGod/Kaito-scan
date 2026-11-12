@@ -5,7 +5,7 @@ Kaito Scan 每小时从 Kaito 抓取 mindshare 快照并缓存，通过 REST API
 ## Base URL
 
 ```
-https://kaito-scan-production-0895.up.railway.app
+https://kaito-scan-production.up.railway.app
 ```
 
 ## 认证
@@ -38,6 +38,7 @@ Dashboard 首页 `/` 不需要认证，公开访问。
 |---|---|
 | `GET /api/pre-tge` | `pre-tge:<duration>:heatmap` |
 | `GET /api/pre-tge/top-delta` | `pre-tge:<duration>:topDelta` |
+| `GET /api/pre-tge/kols` | `pre-tge:<duration>:kols` |
 | `GET /api/infomarkets` | `infomarkets:<duration>:heatmap` |
 | `GET /api/exchange` | `exchange:<duration>:heatmap` |
 
@@ -111,7 +112,7 @@ GET /api/status
 返回更新状态、下次计划时间、上次运行信息、错误、所有快照 key 列表。
 
 ```bash
-curl https://kaito-scan-production-0895.up.railway.app/api/status \
+curl https://kaito-scan-production.up.railway.app/api/status \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -124,7 +125,7 @@ GET /api/live
 返回全部快照的完整数据。
 
 ```bash
-curl https://kaito-scan-production-0895.up.railway.app/api/live \
+curl https://kaito-scan-production.up.railway.app/api/live \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -137,7 +138,7 @@ GET /api/catalog
 返回所有快照的 key、数量、最后更新时间。
 
 ```bash
-curl https://kaito-scan-production-0895.up.railway.app/api/catalog \
+curl https://kaito-scan-production.up.railway.app/api/catalog \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -148,7 +149,7 @@ GET /api/pre-tge?duration=24h&limit=50
 ```
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/pre-tge?duration=7d&limit=50" \
+curl "https://kaito-scan-production.up.railway.app/api/pre-tge?duration=7d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -159,9 +160,26 @@ GET /api/pre-tge/top-delta?duration=24h&limit=50
 ```
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/pre-tge/top-delta?duration=30d&limit=50" \
+curl "https://kaito-scan-production.up.railway.app/api/pre-tge/top-delta?duration=30d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
+
+### Pre-TGE KOL Leaderboard
+
+```
+GET /api/pre-tge/kols?duration=7d&limit=50
+```
+
+pre-TGE 赛道自己的 KOL 榜，和 `infomarkets/kols` 是不同的排名——两者只有约 5/100 重合。评分维度也不同：用 mentions / insightfulness / originality，而不是 mindshare。
+
+duration 支持 `7d` `30d` `3m` `6m` `12m`。
+
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/pre-tge/kols?duration=7d&limit=100" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+每个条目包含 `rank` `user_id` `username` `name` `bio` `mindshare` `mention_score` `insightfullness` `originality` `follower_net_worth` `follower_count` `smart_follower_count`。
 
 ### Info Markets Heatmap
 
@@ -170,7 +188,7 @@ GET /api/infomarkets?duration=24h&limit=50
 ```
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/infomarkets?duration=3m&limit=50" \
+curl "https://kaito-scan-production.up.railway.app/api/infomarkets?duration=3m&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -183,7 +201,7 @@ GET /api/infomarkets/kols?duration=7d&limit=50
 duration 支持 `7d` `30d` `3m` `6m` `12m`，不支持 `24h`。
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/infomarkets/kols?duration=12m&limit=100" \
+curl "https://kaito-scan-production.up.railway.app/api/infomarkets/kols?duration=12m&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -194,7 +212,7 @@ GET /api/exchange?duration=24h&limit=50
 ```
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/exchange?duration=30d&limit=50" \
+curl "https://kaito-scan-production.up.railway.app/api/exchange?duration=30d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -208,7 +226,7 @@ GET /api/arena/voices?vertical=stock&duration=7d&limit=50
 `duration`：`7d` `30d` `3m` `6m` `12m`
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/arena/voices?vertical=crypto&duration=7d&limit=100" \
+curl "https://kaito-scan-production.up.railway.app/api/arena/voices?vertical=crypto&duration=7d&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -222,7 +240,7 @@ GET /api/arena/companies?vertical=stock&duration=24h&limit=50
 `duration`：`24h` `7d` `30d` `3m` `6m` `12m`
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/arena/companies?vertical=stock&duration=24h&limit=100" \
+curl "https://kaito-scan-production.up.railway.app/api/arena/companies?vertical=stock&duration=24h&limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -235,13 +253,13 @@ GET /api/snapshot/:key?limit=50
 `key` 需要 URL 编码（`:` 编码为 `%3A`）。
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/snapshot/pre-tge%3A24h%3Aheatmap?limit=50" \
+curl "https://kaito-scan-production.up.railway.app/api/snapshot/pre-tge%3A24h%3Aheatmap?limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 
-curl "https://kaito-scan-production-0895.up.railway.app/api/snapshot/arena-voices-crypto%3A7d%3Aleaderboard?limit=100" \
+curl "https://kaito-scan-production.up.railway.app/api/snapshot/arena-voices-crypto%3A7d%3Aleaderboard?limit=100" \
   -H "Authorization: Bearer YOUR_API_KEY"
 
-curl "https://kaito-scan-production-0895.up.railway.app/api/snapshot/arena-voices-stock%3Aall%3Adelta-all" \
+curl "https://kaito-scan-production.up.railway.app/api/snapshot/arena-voices-stock%3Aall%3Adelta-all" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -254,7 +272,7 @@ GET /api/proxy/mindshare-line?user_ids=ID1,ID2&vertical=trading&duration=7d
 转发 Kaito 的 `batch_mindshare_line` 端点，返回指定用户的历史 mindshare 折线数据。`vertical` 使用 Kaito 内部名称：`trading`（对应 stock）、`ai`、`crypto`。
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/proxy/mindshare-line?user_ids=258480276,14470&vertical=crypto&duration=7d" \
+curl "https://kaito-scan-production.up.railway.app/api/proxy/mindshare-line?user_ids=258480276,14470&vertical=crypto&duration=7d" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -271,7 +289,7 @@ GET /api/proxy/ticker-line?ticker=BTC&duration=7d
 - ticker 不存在时返回全 0 序列，不是 404
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/proxy/ticker-line?ticker=BTC&duration=30d" \
+curl "https://kaito-scan-production.up.railway.app/api/proxy/ticker-line?ticker=BTC&duration=30d" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -294,16 +312,45 @@ curl "https://kaito-scan-production-0895.up.railway.app/api/proxy/ticker-line?ti
 }
 ```
 
-### 全站互动量历史
+### 互动量历史（全站 / 单个 ticker）
 
 ```
 GET /api/proxy/engagement?duration=7d
+GET /api/proxy/engagement?ticker=BTC&duration=30d
 ```
 
-转发 Kaito 的 `tickers/engagement`。返回全站聚合的互动量时间序列，不按 ticker 拆分（传 ticker 参数会被忽略）。
+转发 Kaito 的 `tickers/engagement`。
+
+不传 `ticker` 时返回全站聚合的互动量序列。传 `ticker` 时额外返回**该 ticker 的价格序列**，并且互动量也是该 ticker 单独的：
+
+```json
+{
+  "interval": "1d",
+  "price": {
+    "success": true,
+    "dayChange": "0.34%",
+    "priceData": [16542.45, 16619.06, ...],
+    "priceTimeseriesData": [["timestamp", 1672531200, ...], ["Price", 16542.45, ...]]
+  },
+  "result": {
+    "total": {
+      "timestamp": [1672531200000, ...],
+      "charts": [
+        { "title": "Price", "data": [...] },
+        { "title": "Total document mentions", "data": [...] },
+        { "title": "Total engagement", "data": [...] },
+        { "title": "Smart engagement", "data": [...] }
+      ]
+    }
+  },
+  "summaryData": { "document": 2108841, "engagement": 384631226, "smartEngagement": 2044799 }
+}
+```
+
+`result.total.charts` 里的四条序列是 price / mentions / engagement / smart engagement，可直接拿来画价格和热度的对比图。
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/proxy/engagement?duration=30d" \
+curl "https://kaito-scan-production.up.railway.app/api/proxy/engagement?duration=30d" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -329,7 +376,7 @@ POST /api/admin/update
 ```
 
 ```bash
-curl -X POST https://kaito-scan-production-0895.up.railway.app/api/admin/update \
+curl -X POST https://kaito-scan-production.up.railway.app/api/admin/update \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -351,7 +398,7 @@ GET /api/kol/:id?scope=all
 ```
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/kol/jukan05" \
+curl "https://kaito-scan-production.up.railway.app/api/kol/jukan05" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -405,7 +452,7 @@ GET /api/kol/:id/followers?scope=crypto
 - `mindshareRank` / `mindshareShare`、`smartFollowerBreakdown`、`engagementDetails`、`impressionDetails`、`contentFormat`、`contentActivity`、`sponsored`、`cryptoRolePercentage`（Kaito 原样透传）
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/kol/jukan05/followers?scope=crypto" \
+curl "https://kaito-scan-production.up.railway.app/api/kol/jukan05/followers?scope=crypto" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -419,7 +466,7 @@ POST /api/kol/batch   body: {"ids": [...], "scope": "crypto"}
 单次上限：`scope=all` 时 20 个，单个 scope 时 50 个（`all` 每个 KOL 要请求 3 次）。
 
 ```bash
-curl -X POST "https://kaito-scan-production-0895.up.railway.app/api/kol/batch" \
+curl -X POST "https://kaito-scan-production.up.railway.app/api/kol/batch" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "content-type: application/json" \
   -d '{"ids":["jukan05","hosseeb","blknoiz06"],"scope":"crypto"}'
@@ -545,7 +592,7 @@ limit=50
 `interval=day` 按上海时区日历天分组，每天取最新一条。
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/history/query?source=arena-voices-crypto&dataset=leaderboard&duration=7d&from=2026-10-01&to=2026-11-03&interval=day&limit=50" \
+curl "https://kaito-scan-production.up.railway.app/api/history/query?source=arena-voices-crypto&dataset=leaderboard&duration=7d&from=2026-10-01&to=2026-11-03&interval=day&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -568,7 +615,7 @@ GET /api/history/snapshot/:key?limit=24
 ```
 
 ```bash
-curl "https://kaito-scan-production-0895.up.railway.app/api/history/snapshot/arena-voices-stock%3A7d%3Aleaderboard?limit=24" \
+curl "https://kaito-scan-production.up.railway.app/api/history/snapshot/arena-voices-stock%3A7d%3Aleaderboard?limit=24" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 

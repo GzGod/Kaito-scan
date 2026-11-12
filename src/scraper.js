@@ -104,6 +104,21 @@ function kolMindshareJob({ source, duration, params }) {
   };
 }
 
+// Pre-TGE has its own KOL board: a different ranking (5/100 overlap with the
+// regular leaderboard) scored on mention/insight/originality rather than
+// mindshare.
+function preTgeKolJob({ duration }) {
+  return {
+    key: `pre-tge:${duration}:kols`,
+    source: 'pre-tge',
+    dataset: 'kols',
+    duration,
+    service: 'ai',
+    route: 'kol/mindshare/top-pre-tge',
+    params: { top_n: 100, topic_id: 'INFOMKT', community_tier: 'tier1', language_filter: 'all', duration },
+  };
+}
+
 function arenaRouteVertical(mode, vertical) {
   if (vertical !== 'stock') return vertical;
   return mode === 'companies' ? 'equity' : 'trading';
@@ -242,16 +257,19 @@ function tickerJobs() {
 }
 
 function kolJobs() {
-  return KOL_DURATIONS.map((duration) => kolMindshareJob({
-    source: 'infomarkets',
-    duration,
-    params: {
-      top_n: 100,
-      topic_id: 'INFOMKT',
-      community_tier: 'tier1',
-      language_filter: 'all',
-    },
-  }));
+  return [
+    ...KOL_DURATIONS.map((duration) => kolMindshareJob({
+      source: 'infomarkets',
+      duration,
+      params: {
+        top_n: 100,
+        topic_id: 'INFOMKT',
+        community_tier: 'tier1',
+        language_filter: 'all',
+      },
+    })),
+    ...KOL_DURATIONS.map((duration) => preTgeKolJob({ duration })),
+  ];
 }
 
 function arenaJobs() {

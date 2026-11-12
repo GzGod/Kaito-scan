@@ -10,6 +10,7 @@ const DATASET_ROUTES = {
   '/api/pre-tge/top-delta': { source: 'pre-tge', dataset: 'topDelta', defaultDuration: '24h' },
   '/api/infomarkets': { source: 'infomarkets', dataset: 'heatmap', defaultDuration: '24h' },
   '/api/infomarkets/kols': { source: 'infomarkets', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS },
+  '/api/pre-tge/kols': { source: 'pre-tge', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS },
   '/api/exchange': { source: 'exchange', dataset: 'heatmap', defaultDuration: '24h' },
   '/api/arena/voices': {
     sourcePrefix: 'arena-voices',
