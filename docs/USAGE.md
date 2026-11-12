@@ -28,7 +28,7 @@ Dashboard 首页 `/` 不需要认证，公开访问。
 
 ## 快照总览
 
-当前共 **132 个快照**，每次更新全部刷新。
+当前共 **144 个快照**，每次更新全部刷新。
 
 ### Classic 数据集（Tickers）
 
@@ -39,6 +39,8 @@ Dashboard 首页 `/` 不需要认证，公开访问。
 | `GET /api/pre-tge` | `pre-tge:<duration>:heatmap` |
 | `GET /api/pre-tge/top-delta` | `pre-tge:<duration>:topDelta` |
 | `GET /api/pre-tge/kols` | `pre-tge:<duration>:kols` |
+| `GET /api/nft` | `nft:<duration>:heatmap` |
+| `GET /api/nft/top-delta` | `nft:<duration>:topDelta` |
 | `GET /api/infomarkets` | `infomarkets:<duration>:heatmap` |
 | `GET /api/exchange` | `exchange:<duration>:heatmap` |
 
@@ -162,6 +164,22 @@ GET /api/pre-tge/top-delta?duration=24h&limit=50
 curl "https://kaito-scan-production.up.railway.app/api/pre-tge/top-delta?duration=30d&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
+
+### NFT Heatmap / Top Delta
+
+```
+GET /api/nft?duration=24h&limit=50
+GET /api/nft/top-delta?duration=7d&limit=50
+```
+
+NFT 合集按 mindshare 排名，是独立于所有 ERC-20 ticker 的一套数据（`tickers/mindshare` 传 `nft=true`）。支持 `24h` `7d` `30d` `3m` `6m` `12m`。
+
+```bash
+curl "https://kaito-scan-production.up.railway.app/api/nft?duration=7d&limit=50" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+条目结构同 ticker heatmap：`rank` `ticker`（合集名如 `boredapeyachtclub`）`mindshare` `last_24h_mindshare` `last_30d_mindshare` 等。数量比 ERC-20 少很多（24h 约 25 个，12m 约 44 个）。
 
 ### Pre-TGE KOL Leaderboard
 

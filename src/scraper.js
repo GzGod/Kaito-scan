@@ -242,6 +242,32 @@ function tickerJobs() {
       },
     }),
     tickerMindshareJob({
+      source: 'nft',
+      dataset: 'heatmap',
+      duration,
+      params: {
+        api_version: 'v2',
+        nft: 'true',
+        ex_official: 'false',
+        weighted: 'false',
+        sort_type: 'desc',
+        type: 'heatmap',
+      },
+    }),
+    tickerMindshareJob({
+      source: 'nft',
+      dataset: 'topDelta',
+      duration,
+      params: {
+        api_version: 'v2',
+        nft: 'true',
+        ex_official: 'false',
+        weighted: 'false',
+        sort_type: 'asc',
+        type: 'topDelta',
+      },
+    }),
+    tickerMindshareJob({
       source: 'exchange',
       dataset: 'heatmap',
       duration,
