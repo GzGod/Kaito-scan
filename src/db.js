@@ -18,7 +18,11 @@ let initialized = false;
 
 // Hourly runs write ~112 full JSONB snapshots each, which fills the Railway
 // volume in a few weeks. 0 disables pruning.
-const HISTORY_RETENTION_DAYS = Number(process.env.HISTORY_RETENTION_DAYS ?? 30);
+const HISTORY_RETENTION_DAYS = Number(process.env.HISTORY_RETENTION_DAYS ?? 14);
+// The all-ticker boards run 0.8-3.3 MB per snapshot (38 fields x up to 2614
+// rows). Keeping them in every hourly run fills the volume in days, so they
+// are served from memory only; their history is not persisted.
+const HISTORY_MAX_ITEM_BYTES = Number(process.env.HISTORY_MAX_ITEM_BYTES || 400 * 1024);
 
 function hasDatabase() {
   return Boolean(pool);
@@ -108,7 +112,13 @@ async function saveHistory(result) {
       [result.startedAt, result.completedAt, result.concurrency, result.snapshots.length]
     );
     const runId = runResult.rows[0].id;
+    let skipped = 0;
     for (const snapshot of result.snapshots) {
+      const bytes = Buffer.byteLength(JSON.stringify(snapshot.data));
+      if (bytes > HISTORY_MAX_ITEM_BYTES) {
+        skipped += 1;
+        continue;
+      }
       await client.query(
         `INSERT INTO snapshots
           (run_id, key, source, dataset, duration, route, params, data, item_count, updated_at)
@@ -129,7 +139,13 @@ async function saveHistory(result) {
     }
     await client.query('COMMIT');
     const pruned = await pruneHistory(client);
-    return { enabled: true, runId: Number(runId), snapshots: result.snapshots.length, prunedRuns: pruned };
+    return {
+      enabled: true,
+      runId: Number(runId),
+      snapshots: result.snapshots.length - skipped,
+      skippedOversize: skipped,
+      prunedRuns: pruned,
+    };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
