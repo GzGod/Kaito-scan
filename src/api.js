@@ -163,7 +163,15 @@ async function sendDatasetSnapshot(req, url, res, route) {
     }
     source = `${route.sourcePrefix}-${vertical}`;
   }
-  const key = `${source}:${duration}:${route.dataset}`;
+  let dataset = route.dataset;
+  if (route.datasets) {
+    const topic = String(url.searchParams.get('topic') || '').toUpperCase();
+    if (topic && !route.datasets.includes(topic.toLowerCase())) {
+      return sendJson(res, 400, { error: 'unsupported topic', supportedTopics: route.datasets });
+    }
+    if (topic) dataset = `${route.dataset}-${topic.toLowerCase()}`;
+  }
+  const key = `${source}:${duration}:${dataset}`;
   if (!limit && sendCachedJson(req, res, `snapshot:${key}`)) return;
   const snapshot = filterSnapshot(getSnapshot(key), limit);
   if (!snapshot) return sendJson(res, 404, { error: 'snapshot not found', key });

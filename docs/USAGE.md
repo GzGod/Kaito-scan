@@ -28,7 +28,7 @@ Dashboard 首页 `/` 不需要认证，公开访问。
 
 ## 快照总览
 
-当前共 **144 个快照**，每次更新全部刷新。
+当前共 **154 个快照**，每次更新全部刷新。
 
 ### Classic 数据集（Tickers）
 
@@ -49,6 +49,10 @@ KOL 榜只支持 `7d` `30d` `3m` `6m` `12m`（不含 24h）：
 | 端点路径 | 快照 key 格式 |
 |---|---|
 | `GET /api/infomarkets/kols` | `infomarkets:<duration>:kols` |
+| `GET /api/infomarkets/kols?topic=ai` | `infomarkets:<duration>:kols-ai` |
+| `GET /api/infomarkets/kols?topic=kaito` | `infomarkets:<duration>:kols-kaito` |
+
+`topic` 是独立榜单，不是筛选——`kaito` 榜和默认榜的 100 人零重合，`ai` 约 27 人重合。只支持 `ai` 和 `kaito` 两个值（其他返回 400）。Kaito 还接受 `EXCHANGE` 和 `PRETGE`，但两者结果与默认榜完全相同，所以没有单独存。
 
 ### Arena 数据集
 

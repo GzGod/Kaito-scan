@@ -19,6 +19,9 @@ const ARENA_LEADERBOARD_LIMIT = 100;
 const GITHUB_DURATIONS = ['24h', '7d', '30d'];
 // Kaito serves en/zh/ko; ja and every other value return 400.
 const ARENA_LANGUAGES = ['en', 'zh', 'ko'];
+// Valid topic_id values on kol/mindshare/top-leaderboard. Any other value
+// returns 400; EXCHANGE and PRETGE alias INFOMKT exactly.
+const KOL_TOPICS = ['AI', 'KAITO'];
 
 const PROTECTED_BASE_URLS = {
   ai: AI_BASE_URL,
@@ -94,11 +97,12 @@ function tickerMindshareJob({ source, dataset, duration, params }) {
   };
 }
 
-function kolMindshareJob({ source, duration, params }) {
+function kolMindshareJob({ source, duration, params, topic }) {
+  const dataset = topic ? `kols-${topic.toLowerCase()}` : 'kols';
   return {
-    key: `${source}:${duration}:kols`,
+    key: `${source}:${duration}:${dataset}`,
     source,
-    dataset: 'kols',
+    dataset,
     duration,
     service: 'ai',
     route: 'kol/mindshare/top-leaderboard',
@@ -297,6 +301,20 @@ function kolJobs() {
       },
     })),
     ...KOL_DURATIONS.map((duration) => preTgeKolJob({ duration })),
+    // Non-INFOMKT topics are separate rankings: KAITO shares 0/100 accounts
+    // with INFOMKT, AI shares ~27. EXCHANGE and PRETGE are byte-identical
+    // to INFOMKT, so they are not worth a second copy.
+    ...KOL_TOPICS.flatMap((topic) => KOL_DURATIONS.map((duration) => kolMindshareJob({
+      source: 'infomarkets',
+      duration,
+      topic,
+      params: {
+        top_n: 100,
+        topic_id: topic,
+        community_tier: 'tier1',
+        language_filter: 'all',
+      },
+    }))),
   ];
 }
 
