@@ -204,6 +204,19 @@ curl "https://kaito-scan-production.up.railway.app/api/pre-tge/kols?duration=7d&
 
 每个条目包含 `rank` `user_id` `username` `name` `bio` `mindshare` `mention_score` `insightfullness` `originality` `follower_net_worth` `follower_count` `smart_follower_count`。
 
+### 全局 Ticker 热力图
+
+```
+GET /api/tickers?duration=24h&limit=50
+GET /api/tickers/top-delta?duration=7d&limit=50
+```
+
+全站所有 ticker 的 mindshare 排名。快照 key 沿用历史命名 `infomarkets:<duration>:heatmap`，`/api/infomarkets` 是同一个数据的别名。
+
+数量随时段增长：24h 约 553 个，7d 约 972 个，12m 约 2614 个。
+
+> 注意：Kaito 的 `tickers/mindshare` 会**忽略** `topic_id` 参数，所以这里不是 Info Markets 专题榜，而是全局榜。Info Markets 的 KOL 榜（`/api/infomarkets/kols`）是独立的、真实的数据。
+
 ### Info Markets Heatmap
 
 ```

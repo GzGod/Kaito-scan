@@ -16,6 +16,11 @@ const DATASET_ROUTES = {
   '/api/nft': { source: 'nft', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/nft/top-delta': { source: 'nft', dataset: 'topDelta', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/pre-tge/kols': { source: 'pre-tge', dataset: 'kols', defaultDuration: '7d', durations: KOL_DURATIONS },
+  // topic_id is ignored server-side on tickers/mindshare, so the snapshot we
+  // store as "infomarkets" is in fact the global all-ticker board. Expose it
+  // under the name that matches the data.
+  '/api/tickers': { source: 'infomarkets', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
+  '/api/tickers/top-delta': { source: 'infomarkets', dataset: 'topDelta', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/exchange': { source: 'exchange', dataset: 'heatmap', defaultDuration: '24h', durations: TICKER_DURATIONS },
   '/api/arena/voices': {
     sourcePrefix: 'arena-voices',
